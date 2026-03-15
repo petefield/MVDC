@@ -7,9 +7,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
-// Cosmos DB setup — fallback is the well-known local emulator key, NOT for production use.
-// Set CosmosDb:ConnectionString in appsettings.json or environment variables before deploying.
-var cosmosConnectionString = builder.Configuration["CosmosDb:ConnectionString"] ?? "AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2NPoN5jbQGFHJt4MCBBVbaiDoxCGHjf3lA==;";
+// Cosmos DB setup — configure CosmosDb:ConnectionString in appsettings.json or environment variables.
+var cosmosConnectionString = builder.Configuration["CosmosDb:ConnectionString"]
+    ?? throw new InvalidOperationException("CosmosDb:ConnectionString is not configured.");
 builder.Services.AddSingleton(new CosmosClient(cosmosConnectionString));
 
 // Register repositories
