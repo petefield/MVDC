@@ -1,59 +1,45 @@
-<div class="top-row ps-3 navbar navbar-dark">
+<nav class="navbar navbar-expand-lg mvdc-navbar sticky-top">
     <div class="container-fluid">
-        <a class="navbar-brand" href="">MVDC Football</a>
-        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
+        <a class="navbar-brand mvdc-brand" href="">
+            <span class="brand-icon">⚽</span>
+            <span class="brand-name">MVDC Girls FC</span>
+        </a>
+        <button class="navbar-toggler" type="button" @onclick="ToggleNavMenu" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
+        <div class="@NavMenuCssClass navbar-collapse" id="mvdcNav">
+            <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="" Match="NavLinkMatch.All">Home</NavLink>
+                </li>
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="players">Players</NavLink>
+                </li>
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="coaches">Coaches</NavLink>
+                </li>
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="teams">Teams</NavLink>
+                </li>
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="parents">Parents</NavLink>
+                </li>
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="fixtures">Fixtures</NavLink>
+                </li>
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="availability">Availability</NavLink>
+                </li>
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="matchreports">Match Reports</NavLink>
+                </li>
+            </ul>
+        </div>
     </div>
-</div>
-
-<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
-    <nav class="flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="players">
-                <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> Players
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="coaches">
-                <span class="bi bi-person-badge-fill-nav-menu" aria-hidden="true"></span> Coaches
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="teams">
-                <span class="bi bi-people-fill-nav-menu" aria-hidden="true"></span> Teams
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="parents">
-                <span class="bi bi-house-fill-nav-menu" aria-hidden="true"></span> Parents
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="fixtures">
-                <span class="bi bi-calendar-fill-nav-menu" aria-hidden="true"></span> Fixtures
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="availability">
-                <span class="bi bi-check-circle-fill-nav-menu" aria-hidden="true"></span> Availability
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="matchreports">
-                <span class="bi bi-file-text-fill-nav-menu" aria-hidden="true"></span> Match Reports
-            </NavLink>
-        </div>
-    </nav>
-</div>
+</nav>
 
 @code {
     private bool collapseNavMenu = true;
-    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+    private string NavMenuCssClass => collapseNavMenu ? "collapse" : "";
     private void ToggleNavMenu() => collapseNavMenu = !collapseNavMenu;
 }
