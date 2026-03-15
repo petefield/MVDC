@@ -7,5 +7,5 @@ public class Player
     public DateTime DateOfBirth { get; set; }
     public string Position { get; set; } = string.Empty;
     public string? TeamId { get; set; }
-    public string DocumentType { get; set; } = "Player";
+    public string DocumentType { get; set; } = nameof(Player);
 }

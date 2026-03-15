@@ -1,0 +1,46 @@
+services:
+  cosmosdb:
+    image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview
+    container_name: mvdc-cosmosdb
+    ports:
+      - "8081:8081"        # Cosmos DB endpoint
+      - "1234:1234"        # Data Explorer UI
+    environment:
+      - PROTOCOL=https
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/ready || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  api:
+    build:
+      context: .
+      dockerfile: src/MVDC.Api/Dockerfile
+    container_name: mvdc-api
+    ports:
+      - "5001:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - CosmosDb__ConnectionString=AccountEndpoint=https://cosmosdb:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==;
+      - CosmosDb__DatabaseName=MVDC
+      - CosmosDb__ContainerName=Items
+      - CosmosDb__UseEmulator=true
+    depends_on:
+      cosmosdb:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: src/MVDC.Web/Dockerfile
+    container_name: mvdc-web
+    ports:
+      - "5080:80"
+    environment:
+      - API_BASE_ADDRESS=http://localhost:5001
+    depends_on:
+      - api
+

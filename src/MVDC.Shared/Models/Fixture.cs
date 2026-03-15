@@ -8,5 +8,5 @@ public class Fixture
     public DateTime Date { get; set; }
     public string Venue { get; set; } = string.Empty;
     public bool IsHome { get; set; }
-    public string DocumentType { get; set; } = "Fixture";
+    public string DocumentType { get; set; } = nameof(Fixture);
 }

@@ -6,5 +6,5 @@ public class Coach
     public string Name { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string Phone { get; set; } = string.Empty;
-    public string DocumentType { get; set; } = "Coach";
+    public string DocumentType { get; set; } = nameof(Coach);   
 }

@@ -9,5 +9,5 @@ public class PlayerAvailability
     public bool IsAvailable { get; set; }
     public string? Notes { get; set; }
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-    public string DocumentType { get; set; } = "PlayerAvailability";
+    public string DocumentType { get; set; } = nameof(PlayerAvailability);
 }

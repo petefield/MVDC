@@ -7,5 +7,5 @@ public class Parent
     public string Email { get; set; } = string.Empty;
     public string Phone { get; set; } = string.Empty;
     public List<string> PlayerIds { get; set; } = new();
-    public string DocumentType { get; set; } = "Parent";
+    public string DocumentType { get; set; } = nameof(Parent);
 }

@@ -6,5 +6,5 @@ public class Team
     public string Name { get; set; } = string.Empty;
     public string CoachId { get; set; } = string.Empty;
     public List<string> PlayerIds { get; set; } = new();
-    public string DocumentType { get; set; } = "Team";
+    public string DocumentType { get; set; } = nameof(Team);
 }

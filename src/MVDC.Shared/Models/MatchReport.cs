@@ -10,5 +10,5 @@ public class MatchReport
     public int? AwayScore { get; set; }
     public List<string> PhotoUrls { get; set; } = new();
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public string DocumentType { get; set; } = "MatchReport";
+    public string DocumentType { get; set; } = nameof(MatchReport);
 }
