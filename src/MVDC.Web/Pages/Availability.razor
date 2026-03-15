@@ -1,0 +1,132 @@
+@page "/availability"
+@inject HttpClient Http
+@using MVDC.Shared.Models
+
+<h3>Player Availability</h3>
+
+<div class="row mb-3">
+    <div class="col-md-4">
+        <label>Select Fixture</label>
+        <select class="form-select" value="@selectedFixtureId" @onchange="OnFixtureChanged">
+            <option value="">-- Select Fixture --</option>
+            @foreach (var f in fixtures ?? new List<Fixture>())
+            {
+                <option value="@f.Id">@f.Opponent - @f.Date.ToString("dd MMM yyyy")</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-4">
+        <label>Select Parent</label>
+        <select class="form-select" @bind="selectedParentId">
+            <option value="">-- Select Parent --</option>
+            @foreach (var p in parents ?? new List<Parent>())
+            {
+                <option value="@p.Id">@p.Name</option>
+            }
+        </select>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(selectedFixtureId))
+{
+    <table class="table table-striped">
+        <thead>
+            <tr><th>Player</th><th>Available</th><th>Notes</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var player in fixturePlayers)
+            {
+                var avail = GetAvailability(player.Id);
+                <tr>
+                    <td>@player.Name</td>
+                    <td>
+                        @if (avail != null)
+                        {
+                            <span class="badge @(avail.IsAvailable ? "bg-success" : "bg-danger")">
+                                @(avail.IsAvailable ? "Available" : "Unavailable")
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Not Set</span>
+                        }
+                    </td>
+                    <td>@(avail?.Notes ?? "")</td>
+                    <td>
+                        <button class="btn btn-sm btn-success me-1" @onclick="() => SetAvailability(player.Id, true)">&#10003; Available</button>
+                        <button class="btn btn-sm btn-danger" @onclick="() => SetAvailability(player.Id, false)">&#10007; Unavailable</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Fixture>? fixtures;
+    private List<Parent>? parents;
+    private List<Player>? allPlayers;
+    private List<PlayerAvailability> availabilityList = new();
+    private List<Player> fixturePlayers = new();
+    private string selectedFixtureId = "";
+    private string selectedParentId = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var fixturesTask = Http.GetFromJsonAsync<List<Fixture>>("api/fixtures");
+        var parentsTask = Http.GetFromJsonAsync<List<Parent>>("api/parents");
+        var playersTask = Http.GetFromJsonAsync<List<Player>>("api/players");
+        await Task.WhenAll(fixturesTask, parentsTask, playersTask);
+        fixtures = await fixturesTask;
+        parents = await parentsTask;
+        allPlayers = await playersTask;
+    }
+
+    private async Task OnFixtureChanged(ChangeEventArgs e)
+    {
+        selectedFixtureId = e.Value?.ToString() ?? "";
+        await LoadAvailability();
+    }
+
+    private async Task LoadAvailability()
+    {
+        if (string.IsNullOrEmpty(selectedFixtureId)) return;
+        availabilityList = await Http.GetFromJsonAsync<List<PlayerAvailability>>("api/availability") ?? new();
+        availabilityList = availabilityList.Where(a => a.FixtureId == selectedFixtureId).ToList();
+
+        var fixture = fixtures?.FirstOrDefault(f => f.Id == selectedFixtureId);
+        if (fixture != null)
+        {
+            var team = await Http.GetFromJsonAsync<Team>($"api/teams/{fixture.TeamId}");
+            if (team != null)
+                fixturePlayers = allPlayers?.Where(p => team.PlayerIds.Contains(p.Id)).ToList() ?? new();
+        }
+    }
+
+    private PlayerAvailability? GetAvailability(string playerId) =>
+        availabilityList.FirstOrDefault(a => a.PlayerId == playerId);
+
+    private async Task SetAvailability(string playerId, bool isAvailable)
+    {
+        var existing = GetAvailability(playerId);
+        if (existing != null)
+        {
+            existing.IsAvailable = isAvailable;
+            existing.ParentId = selectedParentId;
+            existing.UpdatedAt = DateTime.UtcNow;
+            await Http.PutAsJsonAsync($"api/availability/{existing.Id}", existing);
+        }
+        else
+        {
+            var newAvail = new PlayerAvailability
+            {
+                PlayerId = playerId,
+                FixtureId = selectedFixtureId,
+                ParentId = selectedParentId,
+                IsAvailable = isAvailable
+            };
+            await Http.PostAsJsonAsync("api/availability", newAvail);
+        }
+        await LoadAvailability();
+    }
+}

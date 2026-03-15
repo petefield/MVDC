@@ -1,0 +1,117 @@
+@page "/parents"
+@inject HttpClient Http
+@using MVDC.Shared.Models
+
+<h3>Parents</h3>
+
+<button class="btn btn-primary mb-3" @onclick="() => ShowForm(null)">Add Parent</button>
+
+@if (showForm)
+{
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5>@(editingParent?.Id != null ? "Edit" : "New") Parent</h5>
+            <div class="mb-2">
+                <label>Name</label>
+                <input class="form-control" @bind="formParent.Name" />
+            </div>
+            <div class="mb-2">
+                <label>Email</label>
+                <input class="form-control" @bind="formParent.Email" />
+            </div>
+            <div class="mb-2">
+                <label>Phone</label>
+                <input class="form-control" @bind="formParent.Phone" />
+            </div>
+            <div class="mb-2">
+                <label>Linked Players</label>
+                @foreach (var p in allPlayers ?? new List<Player>())
+                {
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="parentplayer_@p.Id"
+                               checked="@formParent.PlayerIds.Contains(p.Id)"
+                               @onchange="e => TogglePlayer(p.Id, (bool)e.Value!)" />
+                        <label class="form-check-label" for="parentplayer_@p.Id">@p.Name</label>
+                    </div>
+                }
+            </div>
+            <button class="btn btn-success me-2" @onclick="SaveParent">Save</button>
+            <button class="btn btn-secondary" @onclick="() => showForm = false">Cancel</button>
+        </div>
+    </div>
+}
+
+@if (parents == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr><th>Name</th><th>Email</th><th>Phone</th><th>Players</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var parent in parents)
+            {
+                <tr>
+                    <td>@parent.Name</td>
+                    <td>@parent.Email</td>
+                    <td>@parent.Phone</td>
+                    <td>@parent.PlayerIds.Count</td>
+                    <td>
+                        <button class="btn btn-sm btn-warning me-1" @onclick="() => ShowForm(parent)">Edit</button>
+                        <button class="btn btn-sm btn-danger" @onclick="() => DeleteParent(parent.Id)">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Parent>? parents;
+    private List<Player>? allPlayers;
+    private bool showForm = false;
+    private Parent formParent = new();
+    private Parent? editingParent;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.WhenAll(LoadParents(), LoadPlayers());
+    }
+
+    private async Task LoadParents() => parents = await Http.GetFromJsonAsync<List<Parent>>("api/parents");
+    private async Task LoadPlayers() => allPlayers = await Http.GetFromJsonAsync<List<Player>>("api/players");
+
+    private void ShowForm(Parent? parent)
+    {
+        editingParent = parent;
+        formParent = parent != null ? new Parent { Id = parent.Id, Name = parent.Name, Email = parent.Email, Phone = parent.Phone, PlayerIds = new List<string>(parent.PlayerIds) } : new Parent();
+        showForm = true;
+    }
+
+    private void TogglePlayer(string playerId, bool isChecked)
+    {
+        if (isChecked && !formParent.PlayerIds.Contains(playerId))
+            formParent.PlayerIds.Add(playerId);
+        else if (!isChecked)
+            formParent.PlayerIds.Remove(playerId);
+    }
+
+    private async Task SaveParent()
+    {
+        if (editingParent != null)
+            await Http.PutAsJsonAsync($"api/parents/{formParent.Id}", formParent);
+        else
+            await Http.PostAsJsonAsync("api/parents", formParent);
+        showForm = false;
+        await LoadParents();
+    }
+
+    private async Task DeleteParent(string id)
+    {
+        await Http.DeleteAsync($"api/parents/{id}");
+        await LoadParents();
+    }
+}

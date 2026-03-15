@@ -1,0 +1,141 @@
+@page "/matchreports"
+@inject HttpClient Http
+@using MVDC.Shared.Models
+
+<h3>Match Reports</h3>
+
+<button class="btn btn-primary mb-3" @onclick="() => ShowForm(null)">Add Match Report</button>
+
+@if (showForm)
+{
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5>@(editingReport?.Id != null ? "Edit" : "New") Match Report</h5>
+            <div class="mb-2">
+                <label>Fixture</label>
+                <select class="form-select" @bind="formReport.FixtureId">
+                    <option value="">-- Select Fixture --</option>
+                    @foreach (var f in fixtures ?? new List<Fixture>())
+                    {
+                        <option value="@f.Id">@f.Opponent - @f.Date.ToString("dd MMM yyyy")</option>
+                    }
+                </select>
+            </div>
+            <div class="mb-2">
+                <label>Coach</label>
+                <select class="form-select" @bind="formReport.CoachId">
+                    <option value="">-- Select Coach --</option>
+                    @foreach (var c in coaches ?? new List<Coach>())
+                    {
+                        <option value="@c.Id">@c.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="row mb-2">
+                <div class="col">
+                    <label>Home Score</label>
+                    <input type="number" class="form-control" @bind="formReport.HomeScore" />
+                </div>
+                <div class="col">
+                    <label>Away Score</label>
+                    <input type="number" class="form-control" @bind="formReport.AwayScore" />
+                </div>
+            </div>
+            <div class="mb-2">
+                <label>Report</label>
+                <textarea class="form-control" rows="5" @bind="formReport.Report"></textarea>
+            </div>
+            <div class="mb-2">
+                <label>Photo URLs (one per line)</label>
+                <textarea class="form-control" rows="3" @bind="photoUrlsText"></textarea>
+            </div>
+            <button class="btn btn-success me-2" @onclick="SaveReport">Save</button>
+            <button class="btn btn-secondary" @onclick="() => showForm = false">Cancel</button>
+        </div>
+    </div>
+}
+
+@if (reports == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    @foreach (var r in reports.OrderByDescending(x => x.CreatedAt))
+    {
+        var fixture = fixtures?.FirstOrDefault(f => f.Id == r.FixtureId);
+        var coach = coaches?.FirstOrDefault(c => c.Id == r.CoachId);
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between">
+                <strong>@(fixture?.Opponent ?? "Unknown") - @(fixture?.Date.ToString("dd MMM yyyy") ?? "")</strong>
+                <span>
+                    @if (r.HomeScore.HasValue && r.AwayScore.HasValue)
+                    {
+                        <span class="badge bg-primary me-2">@r.HomeScore - @r.AwayScore</span>
+                    }
+                    <button class="btn btn-sm btn-warning me-1" @onclick="() => ShowForm(r)">Edit</button>
+                    <button class="btn btn-sm btn-danger" @onclick="() => DeleteReport(r.Id)">Delete</button>
+                </span>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Coach: @(coach?.Name ?? r.CoachId)</p>
+                <p>@r.Report</p>
+                @if (r.PhotoUrls.Any())
+                {
+                    <div class="row">
+                        @foreach (var url in r.PhotoUrls)
+                        {
+                            <div class="col-md-3 mb-2">
+                                <img src="@url" class="img-fluid rounded" alt="Match photo" />
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
+}
+
+@code {
+    private List<MatchReport>? reports;
+    private List<Fixture>? fixtures;
+    private List<Coach>? coaches;
+    private bool showForm = false;
+    private MatchReport formReport = new();
+    private MatchReport? editingReport;
+    private string photoUrlsText = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.WhenAll(LoadReports(), LoadFixtures(), LoadCoaches());
+    }
+
+    private async Task LoadReports() => reports = await Http.GetFromJsonAsync<List<MatchReport>>("api/matchreports");
+    private async Task LoadFixtures() => fixtures = await Http.GetFromJsonAsync<List<Fixture>>("api/fixtures");
+    private async Task LoadCoaches() => coaches = await Http.GetFromJsonAsync<List<Coach>>("api/coaches");
+
+    private void ShowForm(MatchReport? report)
+    {
+        editingReport = report;
+        formReport = report != null ? new MatchReport { Id = report.Id, FixtureId = report.FixtureId, CoachId = report.CoachId, Report = report.Report, HomeScore = report.HomeScore, AwayScore = report.AwayScore, PhotoUrls = new List<string>(report.PhotoUrls) } : new MatchReport();
+        photoUrlsText = string.Join("\n", formReport.PhotoUrls);
+        showForm = true;
+    }
+
+    private async Task SaveReport()
+    {
+        formReport.PhotoUrls = photoUrlsText.Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(u => u.Trim()).ToList();
+        if (editingReport != null)
+            await Http.PutAsJsonAsync($"api/matchreports/{formReport.Id}", formReport);
+        else
+            await Http.PostAsJsonAsync("api/matchreports", formReport);
+        showForm = false;
+        await LoadReports();
+    }
+
+    private async Task DeleteReport(string id)
+    {
+        await Http.DeleteAsync($"api/matchreports/{id}");
+        await LoadReports();
+    }
+}
