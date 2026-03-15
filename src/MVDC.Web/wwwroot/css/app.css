@@ -1,48 +1,85 @@
 /* ============================================================
-   MVDC Girls FC – Club Colour Scheme
-   Primary: Green  |  Accent: Gold  |  Background: Off-white
+   Mole Valley Girls FC – Redesign
+   Matching the public website at https://www.mvgfc.co.uk/
+   --
+   Accent green : #00a14b  (site accent)
+   Dark green   : #007a38  (darker shade)
+   Light green  : #33b76b  (lighter shade)
+   Footer bg    : #222222  (site footer)
+   Footer bottom: #1a1a1a
+   Header bg    : #ffffff  (white navbar like the real site)
+   Body text    : #666666  (matches Divi default)
+   Heading text : #333333
    ============================================================ */
 
 :root {
-    --club-green:        #1e5c1e;
-    --club-green-dark:   #143f14;
-    --club-green-light:  #2e8b2e;
+    --club-green:        #00a14b;
+    --club-green-dark:   #007a38;
+    --club-green-light:  #33b76b;
     --club-gold:         #f0b429;
     --club-gold-dark:    #c8971f;
     --club-white:        #ffffff;
-    --club-light:        #f2f7f2;
-    --club-border:       #d4e6d4;
-    --text-dark:         #1a1a1a;
-    --text-muted:        #5c6e5c;
-    --bs-primary:        #1e5c1e;
-    --bs-primary-rgb:    30,92,30;
+    --club-light:        #f7f9f7;
+    --club-border:       #e2e8e2;
+    --club-footer:       #222222;
+    --club-footer-bottom:#1a1a1a;
+    --text-dark:         #333333;
+    --text-body:         #666666;
+    --text-muted:        #999999;
+    --bs-primary:        #00a14b;
+    --bs-primary-rgb:    0,161,75;
 }
 
 /* ----- Base -------------------------------------------------- */
 html, body {
-    font-family: 'Open Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    background-color: var(--club-light);
-    color: var(--text-dark);
+    font-family: 'Open Sans', Arial, sans-serif;
+    font-size: 14px;
+    background-color: var(--club-white);
+    color: var(--text-body);
+    line-height: 1.7em;
+    font-weight: 500;
     min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
-h1, h2, h3, h4, h5, h6,
-.navbar-brand {
-    font-family: 'Montserrat', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    font-weight: 700;
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Oswald', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-weight: 500;
+    color: var(--text-dark);
+    line-height: 1.1em;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
 }
+
+h1 { font-size: 30px; }
+h2 { font-size: 26px; }
+h3 { font-size: 22px; }
+h4 { font-size: 18px; }
+h5 { font-size: 16px; }
+h6 { font-size: 14px; }
 
 h1:focus { outline: none; }
 
-a, .btn-link { color: var(--club-green); }
-a:hover    { color: var(--club-green-dark); }
+a { color: var(--club-green); text-decoration: none; }
+a:hover { color: var(--club-green-dark); text-decoration: none; }
+
+p { padding-bottom: 1em; }
+p:last-of-type { padding-bottom: 0; }
 
 /* ----- Buttons ----------------------------------------------- */
 .btn-primary {
     color: var(--club-white);
     background-color: var(--club-green);
-    border-color: var(--club-green-dark);
-    font-weight: 600;
+    border-color: var(--club-green);
+    font-family: 'Oswald', sans-serif;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.85rem;
+    padding: 0.5em 1.5em;
+    border-radius: 3px;
+    transition: all 0.2s ease-in-out;
 }
 .btn-primary:hover,
 .btn-primary:focus {
@@ -52,8 +89,27 @@ a:hover    { color: var(--club-green-dark); }
 }
 
 .btn-success {
-    background-color: var(--club-green-light);
+    background-color: var(--club-green);
+    border-color: var(--club-green-dark);
+    font-family: 'Oswald', sans-serif;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.btn-success:hover,
+.btn-success:focus {
+    background-color: var(--club-green-dark);
+    border-color: var(--club-green-dark);
+}
+
+.btn-outline-primary {
+    color: var(--club-green);
     border-color: var(--club-green);
+}
+.btn-outline-primary:hover {
+    background-color: var(--club-green);
+    border-color: var(--club-green);
+    color: var(--club-white);
 }
 
 .btn:focus,
@@ -61,7 +117,7 @@ a:hover    { color: var(--club-green-dark); }
 .btn-link.nav-link:focus,
 .form-control:focus,
 .form-check-input:focus {
-    box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem var(--club-green-light);
+    box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem rgba(0,161,75,0.35);
 }
 
 /* ----- Content area ------------------------------------------ */
@@ -72,19 +128,22 @@ a:hover    { color: var(--club-green-dark); }
 /* ----- Cards ------------------------------------------------- */
 .card {
     border: 1px solid var(--club-border);
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(30,92,30,0.07);
-    transition: transform 0.15s, box-shadow 0.15s;
+    border-radius: 3px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    transition: box-shadow 0.2s;
 }
 .card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(30,92,30,0.12);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 .card-header {
     background-color: var(--club-green);
     color: var(--club-white);
-    font-weight: 600;
-    border-radius: 8px 8px 0 0 !important;
+    font-family: 'Oswald', sans-serif;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    border-radius: 3px 3px 0 0 !important;
+    padding: 0.75rem 1.25rem;
 }
 
 /* ----- Tables ------------------------------------------------ */
@@ -92,66 +151,91 @@ a:hover    { color: var(--club-green-dark); }
     background-color: var(--club-green);
     color: var(--club-white);
     border-color: var(--club-green-dark);
-    font-family: 'Montserrat', sans-serif;
-    font-weight: 600;
-    font-size: 0.85rem;
+    font-family: 'Oswald', sans-serif;
+    font-weight: 500;
+    font-size: 0.8rem;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.05em;
 }
 .table-striped > tbody > tr:nth-of-type(odd) > * {
-    background-color: rgba(30, 92, 30, 0.05);
+    background-color: rgba(0, 161, 75, 0.04);
 }
 
 /* ----- Badge overrides -------------------------------------- */
 .badge.bg-primary { background-color: var(--club-green) !important; }
 
-/* ----- Page title strip ------------------------------------- */
-.page-title-strip {
-    background: linear-gradient(135deg, var(--club-green-dark) 0%, var(--club-green-light) 100%);
-    color: var(--club-white);
-    padding: 1rem 1.5rem;
-    margin: -1.5rem -1rem 1.5rem -1rem;
-    border-radius: 0 0 8px 8px;
+/* ----- Page heading ------------------------------------------ */
+.page-heading {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 500;
+    text-transform: uppercase;
+    color: var(--text-dark);
+    padding-bottom: 0.75rem;
+    margin-bottom: 1rem;
+    border-bottom: 3px solid var(--club-green);
+    display: inline-block;
 }
-.page-title-strip h3 { margin: 0; font-size: 1.4rem; }
 
-/* ----- Hero section ----------------------------------------- */
+/* ----- Hero section (Home page) ------------------------------ */
 .hero-banner {
-    background: linear-gradient(135deg, var(--club-green-dark) 0%, var(--club-green) 60%, var(--club-green-light) 100%);
+    background: linear-gradient(135deg, var(--club-green-dark) 0%, var(--club-green) 50%, var(--club-green-light) 100%);
     color: var(--club-white);
     padding: 3rem 2rem;
-    border-radius: 10px;
     margin-bottom: 2rem;
     position: relative;
     overflow: hidden;
 }
 .hero-banner::before {
-    content: "⚽";
+    content: "";
     position: absolute;
-    right: 2rem;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 6rem;
-    opacity: 0.15;
+    right: -2rem;
+    top: -2rem;
+    width: 300px;
+    height: 300px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 50%;
+}
+.hero-banner::after {
+    content: "";
+    position: absolute;
+    right: 3rem;
+    bottom: -3rem;
+    width: 200px;
+    height: 200px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 50%;
 }
 .hero-banner h1 {
+    font-family: 'Oswald', sans-serif;
     font-size: 2.2rem;
-    font-weight: 800;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #ffffff;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+.hero-banner .tagline {
+    font-family: 'Open Sans', sans-serif;
+    font-size: 1.1rem;
+    font-style: italic;
+    opacity: 0.9;
+    margin-bottom: 0.25rem;
 }
 .hero-banner p {
-    font-size: 1.1rem;
-    opacity: 0.9;
+    font-size: 0.95rem;
+    opacity: 0.85;
     margin-bottom: 0;
 }
 
 /* ----- Dashboard cards -------------------------------------- */
 .dashboard-card {
-    border-top: 4px solid var(--club-green);
-    transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+    border-top: 3px solid var(--club-green);
+    border-radius: 3px;
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
 .dashboard-card:hover {
     border-top-color: var(--club-gold);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.1);
 }
 .dashboard-card .card-icon {
     font-size: 2rem;
@@ -159,29 +243,122 @@ a:hover    { color: var(--club-green-dark); }
     display: block;
 }
 .dashboard-card .card-title {
-    font-family: 'Montserrat', sans-serif;
-    font-weight: 700;
-    color: var(--club-green-dark);
+    font-family: 'Oswald', sans-serif;
+    font-weight: 500;
+    color: var(--text-dark);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
 }
 
 /* ----- Form styles ------------------------------------------ */
-.form-label { font-weight: 600; color: var(--text-dark); }
+.form-label {
+    font-weight: 600;
+    color: var(--text-dark);
+    font-size: 0.85rem;
+}
+.form-control,
+.form-select {
+    border: 1px solid #bbb;
+    border-radius: 3px;
+    font-size: 14px;
+    color: #4e4e4e;
+}
 .form-control:focus,
 .form-select:focus {
-    border-color: var(--club-green-light);
-    box-shadow: 0 0 0 0.2rem rgba(30,92,30,0.2);
+    border-color: var(--club-green);
+    box-shadow: 0 0 0 0.2rem rgba(0,161,75,0.2);
 }
 
 /* ----- Footer ----------------------------------------------- */
 .site-footer {
-    background-color: var(--club-green-dark);
-    color: rgba(255,255,255,0.75);
-    text-align: center;
-    padding: 1rem;
-    font-size: 0.85rem;
+    background-color: var(--club-footer);
+    color: rgba(255,255,255,0.7);
+    padding: 2rem 0 0;
     margin-top: 3rem;
+    font-size: 0.85rem;
 }
-.site-footer a { color: var(--club-gold); }
+.site-footer a { color: #fff; transition: opacity 0.3s; }
+.site-footer a:hover { opacity: 0.7; color: #fff; }
+
+.footer-top {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 2rem;
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 1.5rem 1.5rem;
+}
+.footer-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+.footer-brand img {
+    height: 50px;
+    width: auto;
+}
+.footer-brand-text {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 500;
+    font-size: 1rem;
+    text-transform: uppercase;
+    color: #fff;
+    letter-spacing: 0.03em;
+}
+.footer-tagline {
+    font-style: italic;
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.5);
+    text-transform: none;
+    letter-spacing: 0;
+}
+.footer-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+}
+.footer-links a {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 400;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+}
+.footer-social {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+.footer-social a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+    transition: background 0.2s;
+    font-size: 0.9rem;
+}
+.footer-social a:hover {
+    background: var(--club-green);
+    opacity: 1;
+}
+
+.footer-bottom {
+    background-color: var(--club-footer-bottom);
+    text-align: center;
+    padding: 0.75rem 1rem;
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.5);
+    margin-top: 1rem;
+}
+.footer-bottom a { color: var(--club-green); font-weight: 600; }
 
 /* ----- Validation ------------------------------------------- */
 .valid.modified:not([type=checkbox]) { outline: 1px solid #26b050; }

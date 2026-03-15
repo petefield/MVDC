@@ -1,5 +1,5 @@
-/* MainLayout — top-nav layout (no sidebar) */
+/* MainLayout — constrained content width matching MVGFC site */
 main {
-    max-width: 1400px;
+    max-width: 1080px;
     margin: 0 auto;
 }
