@@ -18,6 +18,8 @@ public class CosmosRepository<T> : IRepository<T> where T : class
 
     public async Task<IEnumerable<T>> GetAllAsync()
     {
+        // Cosmos SDK 3.x uses camelCase JSON serialization by default,
+        // so the PascalCase C# property 'DocumentType' is stored as 'documentType' in the document.
         var query = new QueryDefinition("SELECT * FROM c WHERE c.documentType = @type")
             .WithParameter("@type", _documentType);
         var results = new List<T>();
