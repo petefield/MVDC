@@ -1,4 +1,7 @@
 @* Navigation matching MVGFC website style — white header with logo *@
+@inject JwtAuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+
 <nav class="navbar navbar-expand-lg mvdc-navbar sticky-top">
     <div class="container">
         <a class="navbar-brand mvdc-brand" href="">
@@ -13,27 +16,46 @@
                 <li class="nav-item">
                     <NavLink class="nav-link" href="" Match="NavLinkMatch.All">Home</NavLink>
                 </li>
-                <li class="nav-item">
-                    <NavLink class="nav-link" href="players">Players</NavLink>
-                </li>
-                <li class="nav-item">
-                    <NavLink class="nav-link" href="coaches">Coaches</NavLink>
-                </li>
-                <li class="nav-item">
-                    <NavLink class="nav-link" href="teams">Teams</NavLink>
-                </li>
-                <li class="nav-item">
-                    <NavLink class="nav-link" href="parents">Parents</NavLink>
-                </li>
-                <li class="nav-item">
-                    <NavLink class="nav-link" href="fixtures">Fixtures</NavLink>
-                </li>
-                <li class="nav-item">
-                    <NavLink class="nav-link" href="availability">Availability</NavLink>
-                </li>
-                <li class="nav-item">
-                    <NavLink class="nav-link" href="matchreports">Match Reports</NavLink>
-                </li>
+                <AuthorizeView>
+                    <Authorized>
+                        <li class="nav-item">
+                            <NavLink class="nav-link" href="players">Players</NavLink>
+                        </li>
+                        <li class="nav-item">
+                            <NavLink class="nav-link" href="coaches">Coaches</NavLink>
+                        </li>
+                        <li class="nav-item">
+                            <NavLink class="nav-link" href="teams">Teams</NavLink>
+                        </li>
+                        <li class="nav-item">
+                            <NavLink class="nav-link" href="parents">Parents</NavLink>
+                        </li>
+                        <li class="nav-item">
+                            <NavLink class="nav-link" href="fixtures">Fixtures</NavLink>
+                        </li>
+                        <li class="nav-item">
+                            <NavLink class="nav-link" href="availability">Availability</NavLink>
+                        </li>
+                        <li class="nav-item">
+                            <NavLink class="nav-link" href="matchreports">Match Reports</NavLink>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                @context.User.Identity?.Name
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><span class="dropdown-item-text text-muted small">@GetUserRole(context)</span></li>
+                                <li><hr class="dropdown-divider" /></li>
+                                <li><a class="dropdown-item" href="#" @onclick="HandleLogout" @onclick:preventDefault>Sign Out</a></li>
+                            </ul>
+                        </li>
+                    </Authorized>
+                    <NotAuthorized>
+                        <li class="nav-item">
+                            <NavLink class="nav-link" href="login">Sign In</NavLink>
+                        </li>
+                    </NotAuthorized>
+                </AuthorizeView>
             </ul>
         </div>
     </div>
@@ -43,4 +65,16 @@
     private bool collapseNavMenu = true;
     private string NavMenuCssClass => collapseNavMenu ? "collapse" : "";
     private void ToggleNavMenu() => collapseNavMenu = !collapseNavMenu;
+
+    private string GetUserRole(AuthenticationState context)
+    {
+        var roleClaim = context.User.FindFirst(System.Security.Claims.ClaimTypes.Role);
+        return roleClaim?.Value ?? "User";
+    }
+
+    private async Task HandleLogout()
+    {
+        await AuthStateProvider.LogoutAsync();
+        Navigation.NavigateTo("/login", forceLoad: false);
+    }
 }

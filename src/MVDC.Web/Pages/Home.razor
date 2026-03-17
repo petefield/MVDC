@@ -1,82 +1,87 @@
 @page "/"
+@inject HttpClient Http
+@using MVDC.Shared.Models
 
 <PageTitle>Mole Valley Girls FC | Girls football at its best</PageTitle>
 
 <div class="hero-banner">
-    <p class="tagline">Girls football at its best</p>
-    <h1>Mole Valley Girls FC</h1>
-    <p>Team management portal &mdash; manage players, coaches, fixtures, availability and match reports.</p>
+    <div class="hero-content">
+        <h1>We're Mole Valley Girls U9</h1>
+        <p>Welcome to our official website! We're a fun and friendly team dedicated to helping young girls develop their football skills and enjoy the game.</p>
+    </div>
 </div>
 
-<div class="row g-4">
-    <div class="col-md-4 col-sm-6">
-        <div class="card dashboard-card h-100">
-            <div class="card-body d-flex flex-column">
-                <span class="card-icon">&#x1F469;&#x200D;&#x26BD;</span>
-                <h5 class="card-title">Players</h5>
-                <p class="card-text text-muted flex-grow-1">Manage player profiles and team assignments.</p>
-                <a href="players" class="btn btn-primary mt-2">Manage Players</a>
+<div class="container">
+    <section class="match-reports-section">
+        <h2 class="section-heading">Latest Match Reports</h2>
+
+        @if (reports == null)
+        {
+            <p class="text-muted">Loading match reports...</p>
+        }
+        else if (!reports.Any())
+        {
+            <p class="text-muted">No match reports yet. <a href="matchreports">Add one</a>.</p>
+        }
+        else
+        {
+            <div class="match-reports-grid">
+                @foreach (var r in reports.OrderByDescending(x => x.CreatedAt).Take(6))
+                {
+
+                    <div class="match-report-card">
+                        <div class="match-report-header">
+                            @{
+                                var fixture = fixtures?.FirstOrDefault(f => f.Id == r.FixtureId);
+                                var teamName = fixture != null
+                                    ? teams?.FirstOrDefault(t => t.Id == fixture.TeamId)?.Name
+                                    : null;
+                            }
+                            @if (teamName != null)
+                            {
+                                <span class="match-report-team">@teamName</span>
+                            }
+                            @if (fixture != null)
+                            {
+                                <span class="match-report-opponent">vs @fixture.Opponent</span>
+                                <span class="match-report-date">@fixture.Date.ToString("dd MMM yyyy")</span>
+                            }
+                            @if (r.HomeScore.HasValue && r.AwayScore.HasValue)
+                            {
+                                <span class="match-score">@r.HomeScore &ndash; @r.AwayScore</span>
+                            }
+                        </div>
+
+                        <p class="match-report-excerpt">
+                            @(r.Report.Length > 180 ? r.Report[..180] + "..." : r.Report)
+                        </p>
+                    </div>
+                }
             </div>
-        </div>
-    </div>
-    <div class="col-md-4 col-sm-6">
-        <div class="card dashboard-card h-100">
-            <div class="card-body d-flex flex-column">
-                <span class="card-icon">&#x1F3C6;</span>
-                <h5 class="card-title">Teams</h5>
-                <p class="card-text text-muted flex-grow-1">Create teams and assign players and coaches.</p>
-                <a href="teams" class="btn btn-primary mt-2">Manage Teams</a>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4 col-sm-6">
-        <div class="card dashboard-card h-100">
-            <div class="card-body d-flex flex-column">
-                <span class="card-icon">&#x1F4C5;</span>
-                <h5 class="card-title">Fixtures</h5>
-                <p class="card-text text-muted flex-grow-1">View and manage upcoming fixtures.</p>
-                <a href="fixtures" class="btn btn-primary mt-2">View Fixtures</a>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4 col-sm-6">
-        <div class="card dashboard-card h-100">
-            <div class="card-body d-flex flex-column">
-                <span class="card-icon">&#x2705;</span>
-                <h5 class="card-title">Availability</h5>
-                <p class="card-text text-muted flex-grow-1">Parents can mark player availability for fixtures.</p>
-                <a href="availability" class="btn btn-primary mt-2">Mark Availability</a>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4 col-sm-6">
-        <div class="card dashboard-card h-100">
-            <div class="card-body d-flex flex-column">
-                <span class="card-icon">&#x1F4DD;</span>
-                <h5 class="card-title">Match Reports</h5>
-                <p class="card-text text-muted flex-grow-1">Coaches write match reports with photos.</p>
-                <a href="matchreports" class="btn btn-primary mt-2">Match Reports</a>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4 col-sm-6">
-        <div class="card dashboard-card h-100">
-            <div class="card-body d-flex flex-column">
-                <span class="card-icon">&#x1F46A;</span>
-                <h5 class="card-title">Parents</h5>
-                <p class="card-text text-muted flex-grow-1">Manage parent contacts and player links.</p>
-                <a href="parents" class="btn btn-primary mt-2">Manage Parents</a>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4 col-sm-6">
-        <div class="card dashboard-card h-100">
-            <div class="card-body d-flex flex-column">
-                <span class="card-icon">&#x1F3BD;</span>
-                <h5 class="card-title">Coaches</h5>
-                <p class="card-text text-muted flex-grow-1">Manage coach profiles and contact details.</p>
-                <a href="coaches" class="btn btn-primary mt-2">Manage Coaches</a>
-            </div>
-        </div>
-    </div>
+
+            @if (reports.Count > 6)
+            {
+                <div class="text-center mt-3">
+                    <a href="matchreports" class="btn btn-primary">View All Match Reports</a>
+                </div>
+            }
+        }
+    </section>
 </div>
+
+@code {
+    private List<MatchReport>? reports;
+    private List<Fixture>? fixtures;
+    private List<Team>? teams;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var reportsTask = Http.GetFromJsonAsync<List<MatchReport>>("api/matchreports");
+        var fixturesTask = Http.GetFromJsonAsync<List<Fixture>>("api/fixtures");
+        var teamsTask = Http.GetFromJsonAsync<List<Team>>("api/teams");
+        await Task.WhenAll(reportsTask, fixturesTask, teamsTask);
+        reports = await reportsTask ?? [];
+        fixtures = await fixturesTask ?? [];
+        teams = await teamsTask ?? [];
+    }
+}

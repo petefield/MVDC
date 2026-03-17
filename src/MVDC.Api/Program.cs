@@ -1,4 +1,9 @@
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Azure.Cosmos;
+using Microsoft.IdentityModel.Tokens;
+using MVDC.Api.Identity;
 using MVDC.Api.Services;
 using MVDC.Shared.Models;
 
@@ -57,6 +62,48 @@ builder.Services.AddScoped<IRepository<MatchReport>>(sp =>
 builder.Services.AddScoped<IRepository<PlayerAvailability>>(sp =>
     new CosmosRepository<PlayerAvailability>(sp.GetRequiredService<CosmosClient>(), sp.GetRequiredService<IConfiguration>(), "PlayerAvailability"));
 
+// ASP.NET Core Identity with custom Cosmos DB stores
+builder.Services.AddIdentityCore<ApplicationUser>(options =>
+    {
+        options.Password.RequireDigit = true;
+        options.Password.RequireLowercase = true;
+        options.Password.RequireUppercase = true;
+        options.Password.RequireNonAlphanumeric = true;
+        options.Password.RequiredLength = 8;
+        options.User.RequireUniqueEmail = true;
+    })
+    .AddRoles<IdentityRole>()
+    .AddUserStore<CosmosUserStore>()
+    .AddRoleStore<CosmosRoleStore>()
+    .AddDefaultTokenProviders();
+
+// JWT Bearer Authentication
+var jwtKey = builder.Configuration["Jwt:Key"]
+    ?? throw new InvalidOperationException("Jwt:Key is not configured.");
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "MVDC";
+var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "MVDC";
+
+builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+        };
+    });
+
+builder.Services.AddAuthorization();
+
 // NOTE: Restrict AllowedOrigins to specific domains in production.
 builder.Services.AddCors(options =>
 {
@@ -90,7 +137,79 @@ for (var attempt = 1; attempt <= 10; attempt++)
     }
 }
 
+// Seed default admin users
+using (var scope = app.Services.CreateScope())
+{
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+    var adminSeeds = new[]
+    {
+        new { Email = "admin@mvgfc.co.uk", Name = "Admin", Password = "Admin123!" },
+        new { Email = "pete.field@gmail.com", Name = "Pete Field", Password = "1Plus2=3" },
+    };
+
+    foreach (var seed in adminSeeds)
+    {
+        var existing = await userManager.FindByEmailAsync(seed.Email);
+        if (existing is null)
+        {
+            var adminUser = new ApplicationUser
+            {
+                Email = seed.Email,
+                Name = seed.Name,
+                Role = "Admin"
+            };
+            var result = await userManager.CreateAsync(adminUser, seed.Password);
+            if (result.Succeeded)
+            {
+                await userManager.AddToRoleAsync(adminUser, "Admin");
+                app.Logger.LogInformation("Admin user '{Email}' seeded successfully.", seed.Email);
+            }
+            else
+            {
+                app.Logger.LogError("Failed to seed admin user '{Email}': {Errors}", seed.Email, string.Join("; ", result.Errors.Select(e => e.Description)));
+            }
+        }
+    }
+}
+
+// Seed Mole Valley Girls teams
+using (var scope = app.Services.CreateScope())
+{
+    var teamRepo = scope.ServiceProvider.GetRequiredService<IRepository<Team>>();
+    var teamSeeds = new[]
+    {
+        new { Id = "mv-u9-blacks", Name = "Mole Valley Girls U9 Blacks" },
+        new { Id = "mv-u9-greens", Name = "Mole Valley Girls U9 Greens" },
+    };
+
+    foreach (var seed in teamSeeds)
+    {
+        var existing = await teamRepo.GetByIdAsync(seed.Id);
+        if (existing is null)
+        {
+            await teamRepo.CreateAsync(new Team { Id = seed.Id, Name = seed.Name });
+            app.Logger.LogInformation("Team '{Name}' seeded successfully.", seed.Name);
+        }
+    }
+}
+
+// Seed fixtures from FA Full-Time for Mole Valley Girls teams
+using (var scope = app.Services.CreateScope())
+{
+    var fixtureRepo = scope.ServiceProvider.GetRequiredService<IRepository<Fixture>>();
+    try
+    {
+        await FullTimeFixtureSeeder.SeedAsync(fixtureRepo, app.Logger);
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogError(ex, "Full-Time fixture seeding failed. The API will continue to start.");
+    }
+}
+
 app.UseCors();
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.Run();

@@ -1,7 +1,9 @@
 @page "/availability"
+@attribute [Authorize]
 @inject HttpClient Http
 @using MVDC.Shared.Models
 
+<div class="container px-3 py-3">
 <h3>Player Availability</h3>
 
 <div class="row mb-3">
@@ -12,16 +14,6 @@
             @foreach (var f in fixtures ?? new List<Fixture>())
             {
                 <option value="@f.Id">@f.Opponent - @f.Date.ToString("dd MMM yyyy")</option>
-            }
-        </select>
-    </div>
-    <div class="col-md-4">
-        <label>Select Parent</label>
-        <select class="form-select" @bind="selectedParentId">
-            <option value="">-- Select Parent --</option>
-            @foreach (var p in parents ?? new List<Parent>())
-            {
-                <option value="@p.Id">@p.Name</option>
             }
         </select>
     </div>
@@ -61,24 +53,21 @@
         </tbody>
     </table>
 }
+</div>
 
 @code {
     private List<Fixture>? fixtures;
-    private List<Parent>? parents;
     private List<Player>? allPlayers;
     private List<PlayerAvailability> availabilityList = new();
     private List<Player> fixturePlayers = new();
     private string selectedFixtureId = "";
-    private string selectedParentId = "";
 
     protected override async Task OnInitializedAsync()
     {
         var fixturesTask = Http.GetFromJsonAsync<List<Fixture>>("api/fixtures");
-        var parentsTask = Http.GetFromJsonAsync<List<Parent>>("api/parents");
         var playersTask = Http.GetFromJsonAsync<List<Player>>("api/players");
-        await Task.WhenAll(fixturesTask, parentsTask, playersTask);
+        await Task.WhenAll(fixturesTask, playersTask);
         fixtures = await fixturesTask;
-        parents = await parentsTask;
         allPlayers = await playersTask;
     }
 
@@ -112,7 +101,6 @@
         if (existing != null)
         {
             existing.IsAvailable = isAvailable;
-            existing.ParentId = selectedParentId;
             existing.UpdatedAt = DateTime.UtcNow;
             await Http.PutAsJsonAsync($"api/availability/{existing.Id}", existing);
         }
@@ -122,7 +110,6 @@
             {
                 PlayerId = playerId,
                 FixtureId = selectedFixtureId,
-                ParentId = selectedParentId,
                 IsAvailable = isAvailable
             };
             await Http.PostAsJsonAsync("api/availability", newAvail);

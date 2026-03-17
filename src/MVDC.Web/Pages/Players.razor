@@ -1,7 +1,9 @@
 @page "/players"
+@attribute [Authorize]
 @inject HttpClient Http
 @using MVDC.Shared.Models
 
+<div class="container px-3 py-3">
 <h3>Players</h3>
 
 <button class="btn btn-primary mb-3" @onclick="() => ShowForm(null)">Add Player</button>
@@ -55,6 +57,7 @@ else
         </tbody>
     </table>
 }
+</div>
 
 @code {
     private List<Player>? players;

@@ -1,5 +1,1 @@
-/* MainLayout — constrained content width matching MVGFC site */
-main {
-    max-width: 1080px;
-    margin: 0 auto;
-}
+/* MainLayout — no max-width on main; pages handle their own container */

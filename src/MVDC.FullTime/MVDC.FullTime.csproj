@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <PackageId>MVDC.FullTime</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>MVDC</Authors>
+    <Description>A .NET client for the FA Full-Time system. Scrapes fixture, result, and team data from fulltime.thefa.com.</Description>
+    <PackageTags>football;fixtures;results;FA;Full-Time</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="HtmlAgilityPack" Version="1.12.2" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,112 @@
+@page "/login"
+@using MVDC.Shared.Models
+@inject HttpClient Http
+@inject JwtAuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+
+<div class="container px-3 py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <div class="text-center mb-4">
+                        <img src="images/mvgfc-logo.png" alt="MVGFC" style="height: 64px;" />
+                        <h4 class="mt-2" style="font-family: 'Oswald', sans-serif; text-transform: uppercase; color: #333;">Sign In</h4>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger py-2">@errorMessage</div>
+                    }
+
+                    <EditForm Model="loginModel" OnValidSubmit="HandleLogin" FormName="login">
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <InputText id="email" class="form-control" @bind-Value="loginModel.Email" placeholder="you@mvgfc.co.uk" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <InputText id="password" type="password" class="form-control" @bind-Value="loginModel.Password" />
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100" disabled="@isLoading">
+                            @if (isLoading)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                            }
+                            Sign In
+                        </button>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private LoginRequest loginModel = new();
+    private string? errorMessage;
+    private bool isLoading;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // If already authenticated, redirect to home
+        var state = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (state.User.Identity?.IsAuthenticated == true)
+        {
+            Navigation.NavigateTo("/");
+        }
+    }
+
+    private async Task HandleLogin()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/auth/login", loginModel);
+            var result = await response.Content.ReadFromJsonAsync<AuthResponse>();
+
+            if (result is null)
+            {
+                errorMessage = "Unexpected error. Please try again.";
+                return;
+            }
+
+            if (!result.Success)
+            {
+                errorMessage = result.Error ?? "Login failed.";
+                return;
+            }
+
+            await AuthStateProvider.LoginAsync(result.Token);
+
+            // Navigate to return URL or home
+            string? returnUrl = null;
+            var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
+            if (!string.IsNullOrEmpty(uri.Query))
+            {
+                var queryParts = uri.Query.TrimStart('?').Split('&');
+                foreach (var part in queryParts)
+                {
+                    var kv = part.Split('=', 2);
+                    if (kv.Length == 2 && kv[0] == "returnUrl")
+                    {
+                        returnUrl = Uri.UnescapeDataString(kv[1]);
+                        break;
+                    }
+                }
+            }
+
+            Navigation.NavigateTo(returnUrl ?? "/", forceLoad: false);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Unable to connect: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}
