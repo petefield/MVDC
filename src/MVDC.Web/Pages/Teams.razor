@@ -1,0 +1,123 @@
+@page "/teams"
+@attribute [Authorize]
+@inject HttpClient Http
+@using MVDC.Shared.Models
+
+<div class="container px-3 py-3">
+<h3>Teams</h3>
+
+<button class="btn btn-primary mb-3" @onclick="() => ShowForm(null)">Create Team</button>
+
+@if (showForm)
+{
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5>@(editingTeam?.Id != null ? "Edit" : "New") Team</h5>
+            <div class="mb-2">
+                <label>Team Name</label>
+                <input class="form-control" @bind="formTeam.Name" />
+            </div>
+            <div class="mb-2">
+                <label>Coach</label>
+                <select class="form-select" @bind="formTeam.CoachId">
+                    <option value="">-- Select Coach --</option>
+                    @foreach (var c in coaches ?? new List<Coach>())
+                    {
+                        <option value="@c.Id">@c.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="mb-2">
+                <label>Assign Players</label>
+                @foreach (var p in allPlayers ?? new List<Player>())
+                {
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="player_@p.Id"
+                               checked="@formTeam.PlayerIds.Contains(p.Id)"
+                               @onchange="e => TogglePlayer(p.Id, (bool)e.Value!)" />
+                        <label class="form-check-label" for="player_@p.Id">@p.Name</label>
+                    </div>
+                }
+            </div>
+            <button class="btn btn-success me-2" @onclick="SaveTeam">Save</button>
+            <button class="btn btn-secondary" @onclick="() => showForm = false">Cancel</button>
+        </div>
+    </div>
+}
+
+@if (teams == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr><th>Name</th><th>Coach</th><th>Players</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var t in teams)
+            {
+                <tr>
+                    <td>@t.Name</td>
+                    <td>@(coaches?.FirstOrDefault(c => c.Id == t.CoachId)?.Name ?? t.CoachId)</td>
+                    <td>@t.PlayerIds.Count players</td>
+                    <td>
+                        <button class="btn btn-sm btn-warning me-1" @onclick="() => ShowForm(t)">Edit</button>
+                        <button class="btn btn-sm btn-danger" @onclick="() => DeleteTeam(t.Id)">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+</div>
+
+@code {
+    private List<Team>? teams;
+    private List<Coach>? coaches;
+    private List<Player>? allPlayers;
+    private bool showForm = false;
+    private Team formTeam = new();
+    private Team? editingTeam;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.WhenAll(LoadTeams(), LoadCoaches(), LoadPlayers());
+    }
+
+    private async Task LoadTeams() => teams = await Http.GetFromJsonAsync<List<Team>>("api/teams");
+    private async Task LoadCoaches() => coaches = await Http.GetFromJsonAsync<List<Coach>>("api/coaches");
+    private async Task LoadPlayers() => allPlayers = await Http.GetFromJsonAsync<List<Player>>("api/players");
+
+    private void ShowForm(Team? team)
+    {
+        editingTeam = team;
+        formTeam = team != null ? new Team { Id = team.Id, Name = team.Name, CoachId = team.CoachId, PlayerIds = new List<string>(team.PlayerIds) } : new Team();
+        showForm = true;
+    }
+
+    private void TogglePlayer(string playerId, bool isChecked)
+    {
+        if (isChecked && !formTeam.PlayerIds.Contains(playerId))
+            formTeam.PlayerIds.Add(playerId);
+        else if (!isChecked)
+            formTeam.PlayerIds.Remove(playerId);
+    }
+
+    private async Task SaveTeam()
+    {
+        if (editingTeam != null)
+            await Http.PutAsJsonAsync($"api/teams/{formTeam.Id}", formTeam);
+        else
+            await Http.PostAsJsonAsync("api/teams", formTeam);
+        showForm = false;
+        await LoadTeams();
+    }
+
+    private async Task DeleteTeam(string id)
+    {
+        await Http.DeleteAsync($"api/teams/{id}");
+        await LoadTeams();
+    }
+}

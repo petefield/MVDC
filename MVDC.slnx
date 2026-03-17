@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/MVDC.Api/MVDC.Api.csproj" />
+    <Project Path="src/MVDC.Shared/MVDC.Shared.csproj" />
+    <Project Path="src/MVDC.Web/MVDC.Web.csproj" />
+  </Folder>
+</Solution>

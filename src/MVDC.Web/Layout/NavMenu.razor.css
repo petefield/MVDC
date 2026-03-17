@@ -1,0 +1,2 @@
+/* All navbar styles moved to wwwroot/css/app.css for global scope.
+   Blazor CSS isolation breaks NavLink child component styling. */

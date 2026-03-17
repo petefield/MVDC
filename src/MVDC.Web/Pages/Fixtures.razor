@@ -1,0 +1,182 @@
+@page "/fixtures"
+@attribute [Authorize]
+@inject HttpClient Http
+@inject NavigationManager Nav
+@using MVDC.Shared.Models
+
+<div class="container px-3 py-3">
+<h3>Fixtures</h3>
+
+<div class="d-flex align-items-center mb-3 gap-3">
+    <button class="btn btn-primary" @onclick="() => ShowForm(null)">Add Fixture</button>
+    <button class="btn btn-outline-secondary" @onclick="RefreshFromFullTime" disabled="@refreshing">
+        @if (refreshing)
+        {
+            <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+            <span>Refreshing...</span>
+        }
+        else
+        {
+            <span>Refresh from Full-Time</span>
+        }
+    </button>
+    <div class="d-flex align-items-center gap-2">
+        <label class="mb-0 fw-bold">Filter:</label>
+        <select class="form-select" style="width: auto;" @bind="SelectedTeamFilter">
+            <option value="">All Teams</option>
+            @foreach (var t in teams ?? new List<Team>())
+            {
+                <option value="@t.Id">@t.Name</option>
+            }
+        </select>
+    </div>
+</div>
+
+@if (showForm)
+{
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5>@(editingFixture?.Id != null ? "Edit" : "New") Fixture</h5>
+            <div class="mb-2">
+                <label>Team</label>
+                <select class="form-select" @bind="formFixture.TeamId">
+                    <option value="">-- Select Team --</option>
+                    @foreach (var t in teams ?? new List<Team>())
+                    {
+                        <option value="@t.Id">@t.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="mb-2">
+                <label>Opponent</label>
+                <input class="form-control" @bind="formFixture.Opponent" />
+            </div>
+            <div class="mb-2">
+                <label>Date</label>
+                <input type="datetime-local" class="form-control" @bind="formFixture.Date" />
+            </div>
+            <div class="mb-2">
+                <label>Venue</label>
+                <input class="form-control" @bind="formFixture.Venue" />
+            </div>
+            <div class="mb-2 form-check">
+                <input type="checkbox" class="form-check-input" id="isHome" @bind="formFixture.IsHome" />
+                <label class="form-check-label" for="isHome">Home Game</label>
+            </div>
+            <button class="btn btn-success me-2" @onclick="SaveFixture">Save</button>
+            <button class="btn btn-secondary" @onclick="() => showForm = false">Cancel</button>
+        </div>
+    </div>
+}
+
+@if (fixtures == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr><th>Team</th><th>Opponent</th><th>Date</th><th>Venue</th><th>H/A</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var f in FilteredFixtures)
+            {
+                <tr>
+                    <td>@(teams?.FirstOrDefault(t => t.Id == f.TeamId)?.Name ?? f.TeamId)</td>
+                    <td>@f.Opponent</td>
+                    <td>@f.Date.ToString("dd MMM yyyy HH:mm")</td>
+                    <td>@f.Venue</td>
+                    <td>@(f.IsHome ? "Home" : "Away")</td>
+                    <td>
+                        @{
+                            var hasReport = matchReports?.Any(r => r.FixtureId == f.Id) == true;
+                        }
+                        <button class="btn btn-sm btn-info me-1" @onclick="() => GoToMatchReport(f.Id)">
+                            @(hasReport ? "Edit Report" : "Add Report")
+                        </button>
+                        <button class="btn btn-sm btn-warning me-1" @onclick="() => ShowForm(f)">Edit</button>
+                        <button class="btn btn-sm btn-danger" @onclick="() => DeleteFixture(f.Id)">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+</div>
+
+@code {
+    private List<Fixture>? fixtures;
+    private List<Team>? teams;
+    private List<MatchReport>? matchReports;
+    private bool showForm = false;
+    private bool refreshing = false;
+    private Fixture formFixture = new();
+    private Fixture? editingFixture;
+    private string selectedTeamFilter = string.Empty;
+
+    private string SelectedTeamFilter
+    {
+        get => selectedTeamFilter;
+        set { selectedTeamFilter = value; }
+    }
+
+    private IEnumerable<Fixture> FilteredFixtures =>
+        (fixtures ?? [])
+            .Where(f => string.IsNullOrEmpty(selectedTeamFilter) || f.TeamId == selectedTeamFilter)
+            .OrderBy(f => f.Date);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.WhenAll(LoadFixtures(), LoadTeams(), LoadMatchReports());
+    }
+
+    private async Task LoadFixtures() => fixtures = await Http.GetFromJsonAsync<List<Fixture>>("api/fixtures");
+    private async Task LoadTeams() => teams = await Http.GetFromJsonAsync<List<Team>>("api/teams");
+    private async Task LoadMatchReports() => matchReports = await Http.GetFromJsonAsync<List<MatchReport>>("api/matchreports");
+
+    private void ShowForm(Fixture? fixture)
+    {
+        editingFixture = fixture;
+        formFixture = fixture != null ? new Fixture { Id = fixture.Id, TeamId = fixture.TeamId, Opponent = fixture.Opponent, Date = fixture.Date, Venue = fixture.Venue, IsHome = fixture.IsHome } : new Fixture { Date = DateTime.Today };
+        showForm = true;
+    }
+
+    private async Task SaveFixture()
+    {
+        if (editingFixture != null)
+            await Http.PutAsJsonAsync($"api/fixtures/{formFixture.Id}", formFixture);
+        else
+            await Http.PostAsJsonAsync("api/fixtures", formFixture);
+        showForm = false;
+        await LoadFixtures();
+    }
+
+    private async Task DeleteFixture(string id)
+    {
+        await Http.DeleteAsync($"api/fixtures/{id}");
+        await LoadFixtures();
+    }
+
+    private void GoToMatchReport(string fixtureId)
+    {
+        Nav.NavigateTo($"matchreports/{fixtureId}");
+    }
+
+    private async Task RefreshFromFullTime()
+    {
+        refreshing = true;
+        try
+        {
+            var response = await Http.PostAsync("api/fixtures/refresh", null);
+            if (response.IsSuccessStatusCode)
+            {
+                fixtures = await response.Content.ReadFromJsonAsync<List<Fixture>>();
+            }
+        }
+        finally
+        {
+            refreshing = false;
+        }
+    }
+}

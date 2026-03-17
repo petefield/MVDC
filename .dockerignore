@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+**/.vs/
+**/.idea/
+**/.vscode/
+**/publish/
+**/*.user
+**/*.suo
+.git/
+.gitignore
+*.md
