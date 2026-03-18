@@ -14,6 +14,7 @@ public class TeamsController : ControllerBase
 
     public TeamsController(IRepository<Team> repository) => _repository = repository;
 
+    [AllowAnonymous]
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Team>>> GetAll(CancellationToken cancellationToken) =>
         Ok(await _repository.GetAllAsync(cancellationToken));
