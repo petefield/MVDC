@@ -61,10 +61,23 @@
     </div>
 </nav>
 
+@implements IDisposable
+
 @code {
     private bool collapseNavMenu = true;
     private string NavMenuCssClass => collapseNavMenu ? "collapse" : "";
     private void ToggleNavMenu() => collapseNavMenu = !collapseNavMenu;
+
+    protected override void OnInitialized()
+    {
+        Navigation.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        collapseNavMenu = true;
+        StateHasChanged();
+    }
 
     private string GetUserRole(AuthenticationState context)
     {
@@ -76,5 +89,10 @@
     {
         await AuthStateProvider.LogoutAsync();
         Navigation.NavigateTo("/login", forceLoad: false);
+    }
+
+    public void Dispose()
+    {
+        Navigation.LocationChanged -= OnLocationChanged;
     }
 }
