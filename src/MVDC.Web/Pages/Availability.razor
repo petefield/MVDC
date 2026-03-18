@@ -1,6 +1,9 @@
 @page "/availability"
 @attribute [Authorize]
 @inject HttpClient Http
+@inject JwtAuthenticationStateProvider AuthStateProvider
+@using System.Security.Claims
+@using MVDC.Web.Auth
 
 <PageTitle>Availability | MVGFC</PageTitle>
 
@@ -71,16 +74,47 @@
     private List<Player> fixturePlayers = new();
     private string selectedFixtureId = "";
     private string? errorMessage;
+    private bool isParent;
+    private HashSet<string> parentPlayerIds = new();
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var role = authState.User.FindFirst(ClaimTypes.Role)?.Value ?? "";
+            var email = authState.User.FindFirst(ClaimTypes.Email)?.Value ?? "";
+            isParent = string.Equals(role, "Parent", StringComparison.OrdinalIgnoreCase);
+
             var fixturesTask = Http.GetFromJsonAsync<List<Fixture>>("api/fixtures");
             var playersTask = Http.GetFromJsonAsync<List<Player>>("api/players");
-            await Task.WhenAll(fixturesTask, playersTask);
+
+            if (isParent)
+            {
+                var parentsTask = Http.GetFromJsonAsync<List<Parent>>("api/parents");
+                await Task.WhenAll(fixturesTask, playersTask, parentsTask);
+                var parents = parentsTask.Result;
+                var parentRecord = parents?.FirstOrDefault(p =>
+                    string.Equals(p.Email, email, StringComparison.OrdinalIgnoreCase));
+                parentPlayerIds = new(parentRecord?.PlayerIds ?? new());
+            }
+            else
+            {
+                await Task.WhenAll(fixturesTask, playersTask);
+            }
+
             fixtures = await fixturesTask;
             allPlayers = await playersTask;
+
+            if (isParent && parentPlayerIds.Any())
+            {
+                var childTeamIds = allPlayers?
+                    .Where(p => parentPlayerIds.Contains(p.Id) && !string.IsNullOrEmpty(p.TeamId))
+                    .Select(p => p.TeamId)
+                    .Distinct()
+                    .ToHashSet() ?? new();
+                fixtures = fixtures?.Where(f => childTeamIds.Contains(f.TeamId)).ToList();
+            }
         }
         catch (Exception ex)
         {
@@ -107,7 +141,11 @@
             {
                 var team = await Http.GetFromJsonAsync<Team>($"api/teams/{fixture.TeamId}");
                 if (team != null)
+                {
                     fixturePlayers = allPlayers?.Where(p => team.PlayerIds.Contains(p.Id)).ToList() ?? new();
+                    if (isParent)
+                        fixturePlayers = fixturePlayers.Where(p => parentPlayerIds.Contains(p.Id)).ToList();
+                }
             }
         }
         catch (Exception ex)
