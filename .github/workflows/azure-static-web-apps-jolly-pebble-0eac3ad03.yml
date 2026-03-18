@@ -7,9 +7,10 @@ on:
     paths:
       - 'src/MVDC.Web/**'
 
+  workflow_dispatch:
+
 jobs:
-  build_and_deploy_job:
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+  build_and_deploy_job:
     runs-on: ubuntu-latest
     name: Build and Deploy Job
     permissions:
@@ -30,6 +31,21 @@ jobs:
                const coredemo = require('@actions/core')
                return await coredemo.getIDToken()
            result-encoding: string
+      - name: Set API Base Address
+        env:
+          API_BASE_ADDRESS: ${{ secrets.API_BASE_ADDRESS }}
+        run: |
+          python3 -c "
+          import json, os
+          path = 'src/MVDC.Web/wwwroot/appsettings.json'
+          with open(path) as f:
+              config = json.load(f)
+          config['ApiBaseAddress'] = os.environ['API_BASE_ADDRESS']
+          with open(path, 'w') as f:
+              json.dump(config, f, indent=2)
+          print('ApiBaseAddress updated in appsettings.json')
+          "
+
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
