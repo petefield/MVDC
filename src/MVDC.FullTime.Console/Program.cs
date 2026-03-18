@@ -16,7 +16,7 @@ Console.WriteLine();
 Console.WriteLine($"Using Season: {seasonId}, Group: {groupKey}");
 Console.WriteLine();
 
-var division = new Division();
+var division = new Division(new FullTimeClient(new HttpClient()));
 
 while (true)
 {

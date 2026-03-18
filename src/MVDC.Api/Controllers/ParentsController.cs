@@ -15,34 +15,37 @@ public class ParentsController : ControllerBase
     public ParentsController(IRepository<Parent> repository) => _repository = repository;
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Parent>>> GetAll() =>
-        Ok(await _repository.GetAllAsync());
+    public async Task<ActionResult<IEnumerable<Parent>>> GetAll(CancellationToken cancellationToken) =>
+        Ok(await _repository.GetAllAsync(cancellationToken));
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<Parent>> GetById(string id)
+    public async Task<ActionResult<Parent>> GetById(string id, CancellationToken cancellationToken)
     {
-        var item = await _repository.GetByIdAsync(id);
+        var item = await _repository.GetByIdAsync(id, cancellationToken);
         return item is null ? NotFound() : Ok(item);
     }
 
+    [Authorize(Roles = "Admin,Coach")]
     [HttpPost]
-    public async Task<ActionResult<Parent>> Create(Parent parent)
+    public async Task<ActionResult<Parent>> Create(Parent parent, CancellationToken cancellationToken)
     {
-        var created = await _repository.CreateAsync(parent);
+        var created = await _repository.CreateAsync(parent, cancellationToken);
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
 
+    [Authorize(Roles = "Admin,Coach")]
     [HttpPut("{id}")]
-    public async Task<ActionResult<Parent>> Update(string id, Parent parent)
+    public async Task<ActionResult<Parent>> Update(string id, Parent parent, CancellationToken cancellationToken)
     {
         if (id != parent.Id) return BadRequest();
-        return Ok(await _repository.UpdateAsync(id, parent));
+        return Ok(await _repository.UpdateAsync(id, parent, cancellationToken));
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(string id)
+    public async Task<IActionResult> Delete(string id, CancellationToken cancellationToken)
     {
-        await _repository.DeleteAsync(id);
+        await _repository.DeleteAsync(id, cancellationToken);
         return NoContent();
     }
 }

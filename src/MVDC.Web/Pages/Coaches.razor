@@ -1,10 +1,20 @@
 @page "/coaches"
 @attribute [Authorize]
 @inject HttpClient Http
-@using MVDC.Shared.Models
+@inject IJSRuntime JS
+
+<PageTitle>Coaches | MVGFC</PageTitle>
 
 <div class="container px-3 py-3">
 <h3>Coaches</h3>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @errorMessage
+        <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+    </div>
+}
 
 <button class="btn btn-primary mb-3" @onclick="() => ShowForm(null)">Add Coach</button>
 
@@ -13,20 +23,27 @@
     <div class="card mb-3">
         <div class="card-body">
             <h5>@(editingCoach?.Id != null ? "Edit" : "New") Coach</h5>
-            <div class="mb-2">
-                <label>Name</label>
-                <input class="form-control" @bind="formCoach.Name" />
-            </div>
-            <div class="mb-2">
-                <label>Email</label>
-                <input class="form-control" @bind="formCoach.Email" />
-            </div>
-            <div class="mb-2">
-                <label>Phone</label>
-                <input class="form-control" @bind="formCoach.Phone" />
-            </div>
-            <button class="btn btn-success me-2" @onclick="SaveCoach">Save</button>
-            <button class="btn btn-secondary" @onclick="() => showForm = false">Cancel</button>
+            <EditForm Model="formCoach" OnValidSubmit="SaveCoach">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="text-danger" />
+                <div class="mb-2">
+                    <label>Name</label>
+                    <InputText class="form-control" @bind-Value="formCoach.Name" />
+                    <ValidationMessage For="() => formCoach.Name" />
+                </div>
+                <div class="mb-2">
+                    <label>Email</label>
+                    <InputText class="form-control" @bind-Value="formCoach.Email" />
+                    <ValidationMessage For="() => formCoach.Email" />
+                </div>
+                <div class="mb-2">
+                    <label>Phone</label>
+                    <InputText class="form-control" @bind-Value="formCoach.Phone" />
+                    <ValidationMessage For="() => formCoach.Phone" />
+                </div>
+                <button type="submit" class="btn btn-success me-2">Save</button>
+                <button type="button" class="btn btn-secondary" @onclick="() => showForm = false">Cancel</button>
+            </EditForm>
         </div>
     </div>
 }
@@ -64,12 +81,20 @@ else
     private bool showForm = false;
     private Coach formCoach = new();
     private Coach? editingCoach;
+    private string? errorMessage;
 
     protected override async Task OnInitializedAsync() => await LoadCoaches();
 
     private async Task LoadCoaches()
     {
-        coaches = await Http.GetFromJsonAsync<List<Coach>>("api/coaches");
+        try
+        {
+            coaches = await Http.GetFromJsonAsync<List<Coach>>("api/coaches");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to load coaches: {ex.Message}";
+        }
     }
 
     private void ShowForm(Coach? coach)
@@ -81,17 +106,47 @@ else
 
     private async Task SaveCoach()
     {
-        if (editingCoach != null)
-            await Http.PutAsJsonAsync($"api/coaches/{formCoach.Id}", formCoach);
-        else
-            await Http.PostAsJsonAsync("api/coaches", formCoach);
-        showForm = false;
-        await LoadCoaches();
+        try
+        {
+            HttpResponseMessage response;
+            if (editingCoach != null)
+                response = await Http.PutAsJsonAsync($"api/coaches/{formCoach.Id}", formCoach);
+            else
+                response = await Http.PostAsJsonAsync("api/coaches", formCoach);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = $"Failed to save coach (HTTP {(int)response.StatusCode}).";
+                return;
+            }
+
+            showForm = false;
+            await LoadCoaches();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to save coach: {ex.Message}";
+        }
     }
 
     private async Task DeleteCoach(string id)
     {
-        await Http.DeleteAsync($"api/coaches/{id}");
-        await LoadCoaches();
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Are you sure you want to delete this coach?");
+        if (!confirmed) return;
+
+        try
+        {
+            var response = await Http.DeleteAsync($"api/coaches/{id}");
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = $"Failed to delete coach (HTTP {(int)response.StatusCode}).";
+                return;
+            }
+            await LoadCoaches();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to delete coach: {ex.Message}";
+        }
     }
 }

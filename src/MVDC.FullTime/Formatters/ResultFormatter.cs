@@ -52,11 +52,11 @@ public sealed partial class ResultFormatter
 
             // Extract home score (first number in the score string)
             var homeScoreMatch = FirstDigitRegex().Match(fullScore);
-            var homeScore = homeScoreMatch.Success ? homeScoreMatch.Groups[1].Value : "0";
+            var homeScore = homeScoreMatch.Success ? homeScoreMatch.Groups[1].Value : null;
 
             // Extract away score (last number in the score string)
             var awayScoreMatch = LastDigitRegex().Match(fullScore);
-            var awayScore = awayScoreMatch.Success ? awayScoreMatch.Groups[1].Value : "0";
+            var awayScore = awayScoreMatch.Success ? awayScoreMatch.Groups[1].Value : null;
 
             formatted.Add(new FormattedResult
             {

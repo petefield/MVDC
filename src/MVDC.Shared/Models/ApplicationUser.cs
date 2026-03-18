@@ -11,5 +11,5 @@ public class ApplicationUser
     public string SecurityStamp { get; set; } = Guid.NewGuid().ToString();
     public string ConcurrencyStamp { get; set; } = Guid.NewGuid().ToString();
     public string Role { get; set; } = "Parent";
-    public string DocumentType { get; set; } = "User";
+    public string DocumentType { get; init; } = "User";
 }

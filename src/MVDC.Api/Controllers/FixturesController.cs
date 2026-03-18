@@ -21,43 +21,47 @@ public class FixturesController : ControllerBase
 
     [AllowAnonymous]
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Fixture>>> GetAll() =>
-        Ok(await _repository.GetAllAsync());
+    public async Task<ActionResult<IEnumerable<Fixture>>> GetAll(CancellationToken cancellationToken) =>
+        Ok(await _repository.GetAllAsync(cancellationToken));
 
     [AllowAnonymous]
     [HttpGet("{id}")]
-    public async Task<ActionResult<Fixture>> GetById(string id)
+    public async Task<ActionResult<Fixture>> GetById(string id, CancellationToken cancellationToken)
     {
-        var item = await _repository.GetByIdAsync(id);
+        var item = await _repository.GetByIdAsync(id, cancellationToken);
         return item is null ? NotFound() : Ok(item);
     }
 
+    [Authorize(Roles = "Admin,Coach")]
     [HttpPost("refresh")]
-    public async Task<IActionResult> RefreshFromFullTime()
+    public async Task<IActionResult> RefreshFromFullTime(CancellationToken cancellationToken)
     {
-        await FullTimeFixtureSeeder.SeedAsync(_repository, _logger);
-        var fixtures = await _repository.GetAllAsync();
+        await FullTimeFixtureSeeder.SeedAsync(_repository, _logger, cancellationToken);
+        var fixtures = await _repository.GetAllAsync(cancellationToken);
         return Ok(fixtures);
     }
 
+    [Authorize(Roles = "Admin,Coach")]
     [HttpPost]
-    public async Task<ActionResult<Fixture>> Create(Fixture fixture)
+    public async Task<ActionResult<Fixture>> Create(Fixture fixture, CancellationToken cancellationToken)
     {
-        var created = await _repository.CreateAsync(fixture);
+        var created = await _repository.CreateAsync(fixture, cancellationToken);
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
 
+    [Authorize(Roles = "Admin,Coach")]
     [HttpPut("{id}")]
-    public async Task<ActionResult<Fixture>> Update(string id, Fixture fixture)
+    public async Task<ActionResult<Fixture>> Update(string id, Fixture fixture, CancellationToken cancellationToken)
     {
         if (id != fixture.Id) return BadRequest();
-        return Ok(await _repository.UpdateAsync(id, fixture));
+        return Ok(await _repository.UpdateAsync(id, fixture, cancellationToken));
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(string id)
+    public async Task<IActionResult> Delete(string id, CancellationToken cancellationToken)
     {
-        await _repository.DeleteAsync(id);
+        await _repository.DeleteAsync(id, cancellationToken);
         return NoContent();
     }
 }

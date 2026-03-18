@@ -28,11 +28,11 @@ public class AuthController : ControllerBase
     {
         var user = await _userManager.FindByEmailAsync(request.Email);
         if (user is null)
-            return Ok(new AuthResponse { Success = false, Error = "Invalid email or password." });
+            return Unauthorized(new AuthResponse { Success = false, Error = "Invalid email or password." });
 
         var passwordValid = await _userManager.CheckPasswordAsync(user, request.Password);
         if (!passwordValid)
-            return Ok(new AuthResponse { Success = false, Error = "Invalid email or password." });
+            return Unauthorized(new AuthResponse { Success = false, Error = "Invalid email or password." });
 
         var token = GenerateJwtToken(user);
 
@@ -52,11 +52,11 @@ public class AuthController : ControllerBase
     {
         var existingUser = await _userManager.FindByEmailAsync(request.Email);
         if (existingUser is not null)
-            return Ok(new AuthResponse { Success = false, Error = "A user with that email already exists." });
+            return Conflict(new AuthResponse { Success = false, Error = "A user with that email already exists." });
 
         var validRoles = new[] { "Admin", "Coach", "Parent" };
         if (!validRoles.Contains(request.Role, StringComparer.OrdinalIgnoreCase))
-            return Ok(new AuthResponse { Success = false, Error = $"Invalid role. Must be one of: {string.Join(", ", validRoles)}" });
+            return BadRequest(new AuthResponse { Success = false, Error = $"Invalid role. Must be one of: {string.Join(", ", validRoles)}" });
 
         var user = new ApplicationUser
         {
@@ -69,7 +69,7 @@ public class AuthController : ControllerBase
         if (!result.Succeeded)
         {
             var errors = string.Join("; ", result.Errors.Select(e => e.Description));
-            return Ok(new AuthResponse { Success = false, Error = errors });
+            return BadRequest(new AuthResponse { Success = false, Error = errors });
         }
 
         await _userManager.AddToRoleAsync(user, request.Role);

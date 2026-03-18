@@ -27,6 +27,10 @@ services:
       - CosmosDb__DatabaseName=MVDC
       - CosmosDb__ContainerName=Items
       - CosmosDb__UseEmulator=true
+      - Jwt__Key=DockerDevMoleValleyGirlsFCSecretKey2024!AtLeast32Chars
+      - Cors__AllowedOrigins=http://localhost:5080
+      - Seed__AdminPassword=Admin123!
+      - Seed__PetePassword=1Plus2=3
     depends_on:
       cosmosdb:
         condition: service_healthy

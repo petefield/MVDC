@@ -26,7 +26,11 @@ public class JwtAuthenticationStateProvider : AuthenticationStateProvider
 
         var claims = ParseClaimsFromJwt(token);
         if (claims is null)
+        {
+            // Token is expired or invalid — clear it automatically
+            await ClearTokenAsync();
             return AnonymousState;
+        }
 
         var identity = new ClaimsIdentity(claims, "jwt");
         return new AuthenticationState(new ClaimsPrincipal(identity));
@@ -35,7 +39,15 @@ public class JwtAuthenticationStateProvider : AuthenticationStateProvider
     public async Task<string?> GetTokenAsync()
     {
         if (_cachedToken is not null)
+        {
+            // Re-validate cached token expiry
+            if (ParseClaimsFromJwt(_cachedToken) is null)
+            {
+                await ClearTokenAsync();
+                return null;
+            }
             return _cachedToken;
+        }
 
         try
         {
@@ -44,6 +56,13 @@ public class JwtAuthenticationStateProvider : AuthenticationStateProvider
         catch (InvalidOperationException)
         {
             // JSRuntime not available during prerendering
+            return null;
+        }
+
+        // Validate token fetched from localStorage
+        if (_cachedToken is not null && ParseClaimsFromJwt(_cachedToken) is null)
+        {
+            await ClearTokenAsync();
             return null;
         }
 
@@ -59,9 +78,21 @@ public class JwtAuthenticationStateProvider : AuthenticationStateProvider
 
     public async Task LogoutAsync()
     {
-        _cachedToken = null;
-        await _jsRuntime.InvokeVoidAsync("localStorage.removeItem", "authToken");
+        await ClearTokenAsync();
         NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+    }
+
+    private async Task ClearTokenAsync()
+    {
+        _cachedToken = null;
+        try
+        {
+            await _jsRuntime.InvokeVoidAsync("localStorage.removeItem", "authToken");
+        }
+        catch (InvalidOperationException)
+        {
+            // JSRuntime not available during prerendering
+        }
     }
 
     private static IEnumerable<Claim>? ParseClaimsFromJwt(string token)

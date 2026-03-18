@@ -1,10 +1,19 @@
 @page "/availability"
 @attribute [Authorize]
 @inject HttpClient Http
-@using MVDC.Shared.Models
+
+<PageTitle>Availability | MVGFC</PageTitle>
 
 <div class="container px-3 py-3">
 <h3>Player Availability</h3>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @errorMessage
+        <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+    </div>
+}
 
 <div class="row mb-3">
     <div class="col-md-4">
@@ -61,14 +70,22 @@
     private List<PlayerAvailability> availabilityList = new();
     private List<Player> fixturePlayers = new();
     private string selectedFixtureId = "";
+    private string? errorMessage;
 
     protected override async Task OnInitializedAsync()
     {
-        var fixturesTask = Http.GetFromJsonAsync<List<Fixture>>("api/fixtures");
-        var playersTask = Http.GetFromJsonAsync<List<Player>>("api/players");
-        await Task.WhenAll(fixturesTask, playersTask);
-        fixtures = await fixturesTask;
-        allPlayers = await playersTask;
+        try
+        {
+            var fixturesTask = Http.GetFromJsonAsync<List<Fixture>>("api/fixtures");
+            var playersTask = Http.GetFromJsonAsync<List<Player>>("api/players");
+            await Task.WhenAll(fixturesTask, playersTask);
+            fixtures = await fixturesTask;
+            allPlayers = await playersTask;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to load data: {ex.Message}";
+        }
     }
 
     private async Task OnFixtureChanged(ChangeEventArgs e)
@@ -80,15 +97,22 @@
     private async Task LoadAvailability()
     {
         if (string.IsNullOrEmpty(selectedFixtureId)) return;
-        availabilityList = await Http.GetFromJsonAsync<List<PlayerAvailability>>("api/availability") ?? new();
-        availabilityList = availabilityList.Where(a => a.FixtureId == selectedFixtureId).ToList();
-
-        var fixture = fixtures?.FirstOrDefault(f => f.Id == selectedFixtureId);
-        if (fixture != null)
+        try
         {
-            var team = await Http.GetFromJsonAsync<Team>($"api/teams/{fixture.TeamId}");
-            if (team != null)
-                fixturePlayers = allPlayers?.Where(p => team.PlayerIds.Contains(p.Id)).ToList() ?? new();
+            availabilityList = await Http.GetFromJsonAsync<List<PlayerAvailability>>("api/availability") ?? new();
+            availabilityList = availabilityList.Where(a => a.FixtureId == selectedFixtureId).ToList();
+
+            var fixture = fixtures?.FirstOrDefault(f => f.Id == selectedFixtureId);
+            if (fixture != null)
+            {
+                var team = await Http.GetFromJsonAsync<Team>($"api/teams/{fixture.TeamId}");
+                if (team != null)
+                    fixturePlayers = allPlayers?.Where(p => team.PlayerIds.Contains(p.Id)).ToList() ?? new();
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to load availability: {ex.Message}";
         }
     }
 
@@ -97,23 +121,38 @@
 
     private async Task SetAvailability(string playerId, bool isAvailable)
     {
-        var existing = GetAvailability(playerId);
-        if (existing != null)
+        try
         {
-            existing.IsAvailable = isAvailable;
-            existing.UpdatedAt = DateTime.UtcNow;
-            await Http.PutAsJsonAsync($"api/availability/{existing.Id}", existing);
-        }
-        else
-        {
-            var newAvail = new PlayerAvailability
+            var existing = GetAvailability(playerId);
+            HttpResponseMessage response;
+            if (existing != null)
             {
-                PlayerId = playerId,
-                FixtureId = selectedFixtureId,
-                IsAvailable = isAvailable
-            };
-            await Http.PostAsJsonAsync("api/availability", newAvail);
+                existing.IsAvailable = isAvailable;
+                existing.UpdatedAt = DateTime.UtcNow;
+                response = await Http.PutAsJsonAsync($"api/availability/{existing.Id}", existing);
+            }
+            else
+            {
+                var newAvail = new PlayerAvailability
+                {
+                    PlayerId = playerId,
+                    FixtureId = selectedFixtureId,
+                    IsAvailable = isAvailable
+                };
+                response = await Http.PostAsJsonAsync("api/availability", newAvail);
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = $"Failed to update availability (HTTP {(int)response.StatusCode}).";
+                return;
+            }
+
+            await LoadAvailability();
         }
-        await LoadAvailability();
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to update availability: {ex.Message}";
+        }
     }
 }

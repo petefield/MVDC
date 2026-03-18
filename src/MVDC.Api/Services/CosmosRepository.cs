@@ -16,7 +16,7 @@ public class CosmosRepository<T> : IRepository<T> where T : class
         _documentType = documentType;
     }
 
-    public async Task<IEnumerable<T>> GetAllAsync()
+    public async Task<IEnumerable<T>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         // Cosmos SDK 3.x uses camelCase JSON serialization by default,
         // so the PascalCase C# property 'DocumentType' is stored as 'documentType' in the document.
@@ -26,17 +26,17 @@ public class CosmosRepository<T> : IRepository<T> where T : class
         using var feed = _container.GetItemQueryIterator<T>(query);
         while (feed.HasMoreResults)
         {
-            var response = await feed.ReadNextAsync();
+            var response = await feed.ReadNextAsync(cancellationToken);
             results.AddRange(response);
         }
         return results;
     }
 
-    public async Task<T?> GetByIdAsync(string id)
+    public async Task<T?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
     {
         try
         {
-            var response = await _container.ReadItemAsync<T>(id, new PartitionKey(id));
+            var response = await _container.ReadItemAsync<T>(id, new PartitionKey(id), cancellationToken: cancellationToken);
             return response.Resource;
         }
         catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
@@ -45,20 +45,20 @@ public class CosmosRepository<T> : IRepository<T> where T : class
         }
     }
 
-    public async Task<T> CreateAsync(T item)
+    public async Task<T> CreateAsync(T item, CancellationToken cancellationToken = default)
     {
-        var response = await _container.CreateItemAsync(item);
+        var response = await _container.CreateItemAsync(item, cancellationToken: cancellationToken);
         return response.Resource;
     }
 
-    public async Task<T> UpdateAsync(string id, T item)
+    public async Task<T> UpdateAsync(string id, T item, CancellationToken cancellationToken = default)
     {
-        var response = await _container.UpsertItemAsync(item);
+        var response = await _container.UpsertItemAsync(item, new PartitionKey(id), cancellationToken: cancellationToken);
         return response.Resource;
     }
 
-    public async Task DeleteAsync(string id)
+    public async Task DeleteAsync(string id, CancellationToken cancellationToken = default)
     {
-        await _container.DeleteItemAsync<T>(id, new PartitionKey(id));
+        await _container.DeleteItemAsync<T>(id, new PartitionKey(id), cancellationToken: cancellationToken);
     }
 }

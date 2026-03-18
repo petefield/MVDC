@@ -1,6 +1,5 @@
 @page "/"
 @inject HttpClient Http
-@using MVDC.Shared.Models
 
 <PageTitle>Mole Valley Girls FC | Girls football at its best</PageTitle>
 
@@ -12,6 +11,14 @@
 </div>
 
 <div class="container">
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @errorMessage
+            <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+        </div>
+    }
+
     <section class="match-reports-section">
         <h2 class="section-heading">Latest Match Reports</h2>
 
@@ -73,15 +80,23 @@
     private List<MatchReport>? reports;
     private List<Fixture>? fixtures;
     private List<Team>? teams;
+    private string? errorMessage;
 
     protected override async Task OnInitializedAsync()
     {
-        var reportsTask = Http.GetFromJsonAsync<List<MatchReport>>("api/matchreports");
-        var fixturesTask = Http.GetFromJsonAsync<List<Fixture>>("api/fixtures");
-        var teamsTask = Http.GetFromJsonAsync<List<Team>>("api/teams");
-        await Task.WhenAll(reportsTask, fixturesTask, teamsTask);
-        reports = await reportsTask ?? [];
-        fixtures = await fixturesTask ?? [];
-        teams = await teamsTask ?? [];
+        try
+        {
+            var reportsTask = Http.GetFromJsonAsync<List<MatchReport>>("api/matchreports");
+            var fixturesTask = Http.GetFromJsonAsync<List<Fixture>>("api/fixtures");
+            var teamsTask = Http.GetFromJsonAsync<List<Team>>("api/teams");
+            await Task.WhenAll(reportsTask, fixturesTask, teamsTask);
+            reports = await reportsTask ?? [];
+            fixtures = await fixturesTask ?? [];
+            teams = await teamsTask ?? [];
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to load data: {ex.Message}";
+        }
     }
 }

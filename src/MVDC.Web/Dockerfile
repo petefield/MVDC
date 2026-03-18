@@ -18,5 +18,11 @@ COPY src/MVDC.Web/nginx.conf /etc/nginx/nginx.conf
 COPY src/MVDC.Web/docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 
+# Run as non-root user for security
+RUN adduser -D -H appuser && \
+    chown -R appuser:appuser /usr/share/nginx/html /var/cache/nginx /var/log/nginx /etc/nginx && \
+    touch /var/run/nginx.pid && chown appuser:appuser /var/run/nginx.pid
+USER appuser
+
 EXPOSE 80
 ENTRYPOINT ["/docker-entrypoint.sh"]

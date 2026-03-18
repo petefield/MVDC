@@ -2,9 +2,9 @@ namespace MVDC.Api.Services;
 
 public interface IRepository<T>
 {
-    Task<IEnumerable<T>> GetAllAsync();
-    Task<T?> GetByIdAsync(string id);
-    Task<T> CreateAsync(T item);
-    Task<T> UpdateAsync(string id, T item);
-    Task DeleteAsync(string id);
+    Task<IEnumerable<T>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<T?> GetByIdAsync(string id, CancellationToken cancellationToken = default);
+    Task<T> CreateAsync(T item, CancellationToken cancellationToken = default);
+    Task<T> UpdateAsync(string id, T item, CancellationToken cancellationToken = default);
+    Task DeleteAsync(string id, CancellationToken cancellationToken = default);
 }

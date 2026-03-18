@@ -26,9 +26,9 @@ public sealed class Division
     private readonly FixtureFormatter _fixtureFormatter;
     private readonly ResultFormatter _resultFormatter;
 
-    public Division(IFullTimeClient? client = null)
+    public Division(IFullTimeClient client)
     {
-        _client = client ?? new FullTimeClient();
+        _client = client ?? throw new ArgumentNullException(nameof(client));
         _teamParser = new TeamParser();
         _fixtureParser = new FixtureParser();
         _resultParser = new ResultParser();

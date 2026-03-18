@@ -1,10 +1,20 @@
 @page "/players"
 @attribute [Authorize]
 @inject HttpClient Http
-@using MVDC.Shared.Models
+@inject IJSRuntime JS
+
+<PageTitle>Players | MVGFC</PageTitle>
 
 <div class="container px-3 py-3">
 <h3>Players</h3>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @errorMessage
+        <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+    </div>
+}
 
 <button class="btn btn-primary mb-3" @onclick="() => ShowForm(null)">Add Player</button>
 
@@ -13,20 +23,27 @@
     <div class="card mb-3">
         <div class="card-body">
             <h5>@(editingPlayer?.Id != null ? "Edit" : "New") Player</h5>
-            <div class="mb-2">
-                <label>Name</label>
-                <input class="form-control" @bind="formPlayer.Name" />
-            </div>
-            <div class="mb-2">
-                <label>Date of Birth</label>
-                <input type="date" class="form-control" @bind="formPlayer.DateOfBirth" />
-            </div>
-            <div class="mb-2">
-                <label>Position</label>
-                <input class="form-control" @bind="formPlayer.Position" />
-            </div>
-            <button class="btn btn-success me-2" @onclick="SavePlayer">Save</button>
-            <button class="btn btn-secondary" @onclick="() => showForm = false">Cancel</button>
+            <EditForm Model="formPlayer" OnValidSubmit="SavePlayer">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="text-danger" />
+                <div class="mb-2">
+                    <label>Name</label>
+                    <InputText class="form-control" @bind-Value="formPlayer.Name" />
+                    <ValidationMessage For="() => formPlayer.Name" />
+                </div>
+                <div class="mb-2">
+                    <label>Date of Birth</label>
+                    <InputDate class="form-control" @bind-Value="formPlayer.DateOfBirth" />
+                    <ValidationMessage For="() => formPlayer.DateOfBirth" />
+                </div>
+                <div class="mb-2">
+                    <label>Position</label>
+                    <InputText class="form-control" @bind-Value="formPlayer.Position" />
+                    <ValidationMessage For="() => formPlayer.Position" />
+                </div>
+                <button type="submit" class="btn btn-success me-2">Save</button>
+                <button type="button" class="btn btn-secondary" @onclick="() => showForm = false">Cancel</button>
+            </EditForm>
         </div>
     </div>
 }
@@ -64,12 +81,20 @@ else
     private bool showForm = false;
     private Player formPlayer = new();
     private Player? editingPlayer;
+    private string? errorMessage;
 
     protected override async Task OnInitializedAsync() => await LoadPlayers();
 
     private async Task LoadPlayers()
     {
-        players = await Http.GetFromJsonAsync<List<Player>>("api/players");
+        try
+        {
+            players = await Http.GetFromJsonAsync<List<Player>>("api/players");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to load players: {ex.Message}";
+        }
     }
 
     private void ShowForm(Player? player)
@@ -81,17 +106,47 @@ else
 
     private async Task SavePlayer()
     {
-        if (editingPlayer != null)
-            await Http.PutAsJsonAsync($"api/players/{formPlayer.Id}", formPlayer);
-        else
-            await Http.PostAsJsonAsync("api/players", formPlayer);
-        showForm = false;
-        await LoadPlayers();
+        try
+        {
+            HttpResponseMessage response;
+            if (editingPlayer != null)
+                response = await Http.PutAsJsonAsync($"api/players/{formPlayer.Id}", formPlayer);
+            else
+                response = await Http.PostAsJsonAsync("api/players", formPlayer);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = $"Failed to save player (HTTP {(int)response.StatusCode}).";
+                return;
+            }
+
+            showForm = false;
+            await LoadPlayers();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to save player: {ex.Message}";
+        }
     }
 
     private async Task DeletePlayer(string id)
     {
-        await Http.DeleteAsync($"api/players/{id}");
-        await LoadPlayers();
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Are you sure you want to delete this player?");
+        if (!confirmed) return;
+
+        try
+        {
+            var response = await Http.DeleteAsync($"api/players/{id}");
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = $"Failed to delete player (HTTP {(int)response.StatusCode}).";
+                return;
+            }
+            await LoadPlayers();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to delete player: {ex.Message}";
+        }
     }
 }

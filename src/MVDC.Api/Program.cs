@@ -104,11 +104,24 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
-// NOTE: Restrict AllowedOrigins to specific domains in production.
+// NOTE: In production, set Cors:AllowedOrigins to the specific frontend domain(s).
+var allowedOrigins = builder.Configuration["Cors:AllowedOrigins"];
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
-        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+    {
+        if (!string.IsNullOrWhiteSpace(allowedOrigins))
+        {
+            policy.WithOrigins(allowedOrigins.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                  .AllowAnyMethod()
+                  .AllowAnyHeader();
+        }
+        else
+        {
+            // Fallback for development only
+            policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+        }
+    });
 });
 
 var app = builder.Build();
@@ -137,15 +150,15 @@ for (var attempt = 1; attempt <= 10; attempt++)
     }
 }
 
-// Seed default admin users
+// Seed default admin users (passwords should be set via environment variables in production)
 using (var scope = app.Services.CreateScope())
 {
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
     var adminSeeds = new[]
     {
-        new { Email = "admin@mvgfc.co.uk", Name = "Admin", Password = "Admin123!" },
-        new { Email = "pete.field@gmail.com", Name = "Pete Field", Password = "1Plus2=3" },
+        new { Email = "admin@mvgfc.co.uk", Name = "Admin", Password = app.Configuration["Seed:AdminPassword"] ?? "Admin123!" },
+        new { Email = "pete.field@gmail.com", Name = "Pete Field", Password = app.Configuration["Seed:PetePassword"] ?? "1Plus2=3" },
     };
 
     foreach (var seed in adminSeeds)

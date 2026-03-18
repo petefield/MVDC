@@ -1,10 +1,20 @@
 @page "/parents"
 @attribute [Authorize]
 @inject HttpClient Http
-@using MVDC.Shared.Models
+@inject IJSRuntime JS
+
+<PageTitle>Parents | MVGFC</PageTitle>
 
 <div class="container px-3 py-3">
 <h3>Parents</h3>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @errorMessage
+        <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+    </div>
+}
 
 <button class="btn btn-primary mb-3" @onclick="() => ShowForm(null)">Add Parent</button>
 
@@ -13,32 +23,39 @@
     <div class="card mb-3">
         <div class="card-body">
             <h5>@(editingParent?.Id != null ? "Edit" : "New") Parent</h5>
-            <div class="mb-2">
-                <label>Name</label>
-                <input class="form-control" @bind="formParent.Name" />
-            </div>
-            <div class="mb-2">
-                <label>Email</label>
-                <input class="form-control" @bind="formParent.Email" />
-            </div>
-            <div class="mb-2">
-                <label>Phone</label>
-                <input class="form-control" @bind="formParent.Phone" />
-            </div>
-            <div class="mb-2">
-                <label>Linked Players</label>
-                @foreach (var p in allPlayers ?? new List<Player>())
-                {
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="parentplayer_@p.Id"
-                               checked="@formParent.PlayerIds.Contains(p.Id)"
-                               @onchange="e => TogglePlayer(p.Id, (bool)e.Value!)" />
-                        <label class="form-check-label" for="parentplayer_@p.Id">@p.Name</label>
-                    </div>
-                }
-            </div>
-            <button class="btn btn-success me-2" @onclick="SaveParent">Save</button>
-            <button class="btn btn-secondary" @onclick="() => showForm = false">Cancel</button>
+            <EditForm Model="formParent" OnValidSubmit="SaveParent">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="text-danger" />
+                <div class="mb-2">
+                    <label>Name</label>
+                    <InputText class="form-control" @bind-Value="formParent.Name" />
+                    <ValidationMessage For="() => formParent.Name" />
+                </div>
+                <div class="mb-2">
+                    <label>Email</label>
+                    <InputText class="form-control" @bind-Value="formParent.Email" />
+                    <ValidationMessage For="() => formParent.Email" />
+                </div>
+                <div class="mb-2">
+                    <label>Phone</label>
+                    <InputText class="form-control" @bind-Value="formParent.Phone" />
+                    <ValidationMessage For="() => formParent.Phone" />
+                </div>
+                <div class="mb-2">
+                    <label>Linked Players</label>
+                    @foreach (var p in allPlayers ?? new List<Player>())
+                    {
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="parentplayer_@p.Id"
+                                   checked="@formParent.PlayerIds.Contains(p.Id)"
+                                   @onchange="e => TogglePlayer(p.Id, (bool)e.Value!)" />
+                            <label class="form-check-label" for="parentplayer_@p.Id">@p.Name</label>
+                        </div>
+                    }
+                </div>
+                <button type="submit" class="btn btn-success me-2">Save</button>
+                <button type="button" class="btn btn-secondary" @onclick="() => showForm = false">Cancel</button>
+            </EditForm>
         </div>
     </div>
 }
@@ -78,10 +95,18 @@ else
     private bool showForm = false;
     private Parent formParent = new();
     private Parent? editingParent;
+    private string? errorMessage;
 
     protected override async Task OnInitializedAsync()
     {
-        await Task.WhenAll(LoadParents(), LoadPlayers());
+        try
+        {
+            await Task.WhenAll(LoadParents(), LoadPlayers());
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to load data: {ex.Message}";
+        }
     }
 
     private async Task LoadParents() => parents = await Http.GetFromJsonAsync<List<Parent>>("api/parents");
@@ -104,17 +129,47 @@ else
 
     private async Task SaveParent()
     {
-        if (editingParent != null)
-            await Http.PutAsJsonAsync($"api/parents/{formParent.Id}", formParent);
-        else
-            await Http.PostAsJsonAsync("api/parents", formParent);
-        showForm = false;
-        await LoadParents();
+        try
+        {
+            HttpResponseMessage response;
+            if (editingParent != null)
+                response = await Http.PutAsJsonAsync($"api/parents/{formParent.Id}", formParent);
+            else
+                response = await Http.PostAsJsonAsync("api/parents", formParent);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = $"Failed to save parent (HTTP {(int)response.StatusCode}).";
+                return;
+            }
+
+            showForm = false;
+            await LoadParents();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to save parent: {ex.Message}";
+        }
     }
 
     private async Task DeleteParent(string id)
     {
-        await Http.DeleteAsync($"api/parents/{id}");
-        await LoadParents();
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Are you sure you want to delete this parent?");
+        if (!confirmed) return;
+
+        try
+        {
+            var response = await Http.DeleteAsync($"api/parents/{id}");
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = $"Failed to delete parent (HTTP {(int)response.StatusCode}).";
+                return;
+            }
+            await LoadParents();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to delete parent: {ex.Message}";
+        }
     }
 }

@@ -36,9 +36,10 @@ public static class FullTimeFixtureSeeder
     /// <summary>
     /// Fetches fixtures from Full-Time and upserts them into the database.
     /// </summary>
-    public static async Task SeedAsync(IRepository<Fixture> repository, ILogger logger)
+    public static async Task SeedAsync(IRepository<Fixture> repository, ILogger logger, CancellationToken cancellationToken = default)
     {
-        var division = new Division();
+        var client = new FullTimeClient(new HttpClient());
+        var division = new Division(client);
         var totalSeeded = 0;
 
         foreach (var team in Teams)
@@ -47,13 +48,15 @@ public static class FullTimeFixtureSeeder
 
             foreach (var groupKey in team.FixtureGroupKeys)
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 logger.LogInformation("Fetching fixtures from Full-Time group '{GroupKey}' for '{TeamName}'...",
                     groupKey, team.Name);
 
                 IReadOnlyList<FormattedFixture> fixtures;
                 try
                 {
-                    fixtures = await division.GetFormattedFixturesAsync(SeasonId, groupKey);
+                    fixtures = await division.GetFormattedFixturesAsync(SeasonId, groupKey, cancellationToken: cancellationToken);
                 }
                 catch (Exception ex)
                 {
@@ -111,7 +114,7 @@ public static class FullTimeFixtureSeeder
                     try
                     {
                         // Upsert: UpdateAsync uses UpsertItemAsync under the hood
-                        await repository.UpdateAsync(fixtureId, fixture);
+                        await repository.UpdateAsync(fixtureId, fixture, cancellationToken);
                         teamSeeded++;
                     }
                     catch (Exception ex)

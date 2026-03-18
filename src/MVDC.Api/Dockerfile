@@ -16,5 +16,10 @@ RUN dotnet publish src/MVDC.Api/MVDC.Api.csproj -c Release -o /app/publish --no-
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 COPY --from=build /app/publish .
+
+# Run as non-root user for security
+RUN useradd --no-create-home --shell /usr/sbin/nologin appuser
+USER appuser
+
 EXPOSE 8080
 ENTRYPOINT ["dotnet", "MVDC.Api.dll"]

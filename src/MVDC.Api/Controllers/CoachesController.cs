@@ -15,34 +15,37 @@ public class CoachesController : ControllerBase
     public CoachesController(IRepository<Coach> repository) => _repository = repository;
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Coach>>> GetAll() =>
-        Ok(await _repository.GetAllAsync());
+    public async Task<ActionResult<IEnumerable<Coach>>> GetAll(CancellationToken cancellationToken) =>
+        Ok(await _repository.GetAllAsync(cancellationToken));
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<Coach>> GetById(string id)
+    public async Task<ActionResult<Coach>> GetById(string id, CancellationToken cancellationToken)
     {
-        var item = await _repository.GetByIdAsync(id);
+        var item = await _repository.GetByIdAsync(id, cancellationToken);
         return item is null ? NotFound() : Ok(item);
     }
 
+    [Authorize(Roles = "Admin,Coach")]
     [HttpPost]
-    public async Task<ActionResult<Coach>> Create(Coach coach)
+    public async Task<ActionResult<Coach>> Create(Coach coach, CancellationToken cancellationToken)
     {
-        var created = await _repository.CreateAsync(coach);
+        var created = await _repository.CreateAsync(coach, cancellationToken);
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
 
+    [Authorize(Roles = "Admin,Coach")]
     [HttpPut("{id}")]
-    public async Task<ActionResult<Coach>> Update(string id, Coach coach)
+    public async Task<ActionResult<Coach>> Update(string id, Coach coach, CancellationToken cancellationToken)
     {
         if (id != coach.Id) return BadRequest();
-        return Ok(await _repository.UpdateAsync(id, coach));
+        return Ok(await _repository.UpdateAsync(id, coach, cancellationToken));
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(string id)
+    public async Task<IActionResult> Delete(string id, CancellationToken cancellationToken)
     {
-        await _repository.DeleteAsync(id);
+        await _repository.DeleteAsync(id, cancellationToken);
         return NoContent();
     }
 }

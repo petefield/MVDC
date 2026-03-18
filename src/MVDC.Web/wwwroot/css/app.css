@@ -72,8 +72,6 @@ h4 { font-size: 18px; }
 h5 { font-size: 16px; }
 h6 { font-size: 14px; }
 
-h1:focus { outline: none; }
-
 a { color: var(--club-green); text-decoration: none; }
 a:hover { color: var(--club-green-dark); text-decoration: none; }
 
@@ -131,11 +129,6 @@ p:last-of-type { padding-bottom: 0; }
 .form-control:focus,
 .form-check-input:focus {
     box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem rgba(0,161,75,0.35);
-}
-
-/* ----- Content area ------------------------------------------ */
-.content {
-    /* padding-top: 1.5rem; */
 }
 
 /* ----- Cards ------------------------------------------------- */
