@@ -53,11 +53,13 @@
                                 <span class="match-report-opponent">vs @fixture.Opponent</span>
                                 <span class="match-report-date">@fixture.Date.ToString("dd MMM yyyy")</span>
                             }
-                            @if (r.HomeScore.HasValue && r.AwayScore.HasValue)
-                            {
-                                <span class="match-score">@r.HomeScore &ndash; @r.AwayScore</span>
-                            }
                         </div>
+                        @if (r.HomeScore.HasValue && r.AwayScore.HasValue)
+                        {
+                            <div class="match-report-score">
+                                <span class="match-score">@r.HomeScore &ndash; @r.AwayScore</span>
+                            </div>
+                        }
 
                         <p class="match-report-excerpt">
                             @(r.Report.Length > 180 ? r.Report[..180] + "..." : r.Report)

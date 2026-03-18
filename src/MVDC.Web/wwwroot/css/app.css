@@ -312,6 +312,10 @@ p:last-of-type { padding-bottom: 0; }
     border-radius: 3px;
     white-space: nowrap;
 }
+.match-report-score {
+    margin-top: 0.4rem;
+    margin-bottom: 0.5rem;
+}
 .match-report-meta {
     font-size: 0.8rem;
     color: var(--text-muted);
