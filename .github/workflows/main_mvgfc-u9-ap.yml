@@ -47,6 +47,22 @@ jobs:
         with:
           name: .net-app
 
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Configure App Settings
+        uses: azure/appservice-settings@v1
+        with:
+          app-name: 'mvgfc-u9-ap'
+          app-settings-json: |
+            [
+              { "name": "CosmosDb__ConnectionString", "value": "${{ secrets.COSMOSDB_CONNECTION_STRING }}", "slotSetting": false },
+              { "name": "Jwt__Key", "value": "${{ secrets.JWT_KEY }}", "slotSetting": false },
+              { "name": "Cors__AllowedOrigins", "value": "${{ secrets.CORS_ALLOWED_ORIGINS }}", "slotSetting": false }
+            ]
+
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
